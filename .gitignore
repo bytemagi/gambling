@@ -1,0 +1,10 @@
+# Secrets — never commit real keys
+shared.js.bak
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.swp

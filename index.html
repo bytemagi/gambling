@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fuckitt's Funhouse</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+/* ── LOGIN ── */
+#loginScreen {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  min-height:100vh; padding:32px; gap:16px;
+  background:radial-gradient(ellipse at center, #1a0a2e 0%, #080f14 70%);
+}
+.login-logo-wrap { display:flex; justify-content:center; margin-bottom:4px; }
+.login-sub { color:var(--muted); font-size:0.72rem; letter-spacing:4px; text-transform:uppercase; text-align:center; }
+.login-divider { width:200px; height:2px; background:linear-gradient(90deg,transparent,var(--pink),var(--gold),var(--cyan),transparent); margin:4px 0 8px; }
+
+.login-box {
+  background:var(--card-bg); border:1px solid var(--border); border-radius:16px;
+  padding:28px 24px; width:100%; max-width:340px;
+  box-shadow:0 0 60px #000c, 0 0 100px #ff3cac10;
+}
+.login-box input {
+  width:100%; padding:13px 16px; border-radius:8px; border:1px solid var(--border);
+  background:#060e16; color:var(--text); font-size:0.95rem; margin-bottom:10px;
+  outline:none; transition:border-color 0.2s;
+}
+.login-box input:focus { border-color:var(--gold); }
+.login-box input::placeholder { color:var(--muted); }
+#loginErr { color:#e74c3c; font-size:0.85rem; min-height:18px; text-align:center; margin-bottom:4px; }
+
+/* ── LOBBY ── */
+#lobbyScreen { display:none; }
+
+.lobby-hero {
+  text-align:center; padding:28px 20px 16px;
+  background:radial-gradient(ellipse at 50% 0%, #1a0a2e60 0%, transparent 70%);
+}
+.lobby-hero h2 { font-family:'Cinzel',serif; font-size:1.4rem; color:var(--gold); margin-bottom:6px; }
+.lobby-hero p  { color:var(--muted); font-size:0.82rem; letter-spacing:1px; }
+
+.game-grid { display:flex; flex-direction:column; gap:16px; padding:16px; max-width:600px; margin:0 auto; }
+
+.game-card {
+  position:relative; border-radius:20px; overflow:hidden; cursor:pointer;
+  border:1px solid var(--border); box-shadow:0 8px 32px #0009;
+  transition:transform 0.2s, box-shadow 0.2s; text-decoration:none;
+}
+.game-card:active { transform:scale(0.98); }
+.game-card:hover  { transform:translateY(-3px); box-shadow:0 16px 48px #000c; }
+.game-card-bg { position:absolute; inset:0; filter:brightness(0.35) saturate(1.2); }
+.coin-bg  { background:radial-gradient(circle at 30% 50%, #d4af37, #7a5c00, #1a0e00); }
+.dice-bg  { background:radial-gradient(circle at 70% 30%, #1a3a6e, #0a1a3e, #060e16); }
+.slots-bg { background:radial-gradient(circle at 50% 50%, #4a0a6e, #1a0a3e, #060e16); }
+.game-card-glow { position:absolute; inset:0; opacity:0.15; transition:opacity 0.3s; }
+.game-card:hover .game-card-glow { opacity:0.3; }
+.coin-glow  { background:radial-gradient(circle at 50% 50%, #d4af37, transparent 70%); }
+.dice-glow  { background:radial-gradient(circle at 50% 50%, #4a90e2, transparent 70%); }
+.slots-glow { background:radial-gradient(circle at 50% 50%, #9b59b6, transparent 70%); }
+.game-card-content { position:relative; z-index:2; padding:24px 20px; display:flex; align-items:center; gap:18px; }
+.game-icon { font-size:3.2rem; line-height:1; filter:drop-shadow(0 0 16px currentColor); flex-shrink:0; }
+.game-info { flex:1; }
+.game-title { font-family:'Cinzel',serif; font-size:1.3rem; font-weight:900; color:#fff; letter-spacing:1px; margin-bottom:4px; text-shadow:0 2px 8px #000; }
+.game-desc  { color:#aaa; font-size:0.8rem; line-height:1.5; margin-bottom:10px; }
+.game-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.7rem; font-weight:600; letter-spacing:1px; text-transform:uppercase; }
+.badge-gold   { background:#d4af3730; color:var(--gold);  border:1px solid #d4af3750; }
+.badge-blue   { background:#4a90e230; color:#7ab8f5;      border:1px solid #4a90e250; }
+.badge-purple { background:#9b59b630; color:#c39bd3;      border:1px solid #9b59b650; }
+.game-arrow { color:var(--gold); font-size:1.5rem; opacity:0.6; transition:opacity 0.2s, transform 0.2s; }
+.game-card:hover .game-arrow { opacity:1; transform:translateX(4px); }
+
+.feed-wrap { max-width:600px; margin:0 auto; padding:0 16px 16px; }
+.feed-title { font-family:'Cinzel',serif; color:var(--gold); font-size:0.85rem; letter-spacing:2px; text-transform:uppercase; margin-bottom:10px; }
+#feed { display:flex; flex-direction:column; gap:6px; }
+.feed-item { background:var(--card-bg); border:1px solid var(--border); border-radius:8px; padding:8px 14px; font-size:0.85rem; border-left:3px solid var(--border); display:flex; justify-content:space-between; align-items:center; animation:fadeIn 0.3s ease; }
+.feed-item.win  { border-left-color:var(--green); }
+.feed-item.lose { border-left-color:var(--red); }
+.feed-amt { font-family:'Cinzel',serif; font-size:0.9rem; }
+.feed-item.win  .feed-amt { color:var(--green); }
+.feed-item.lose .feed-amt { color:var(--red); }
+@keyframes fadeIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="loginScreen">
+  <div class="login-logo-wrap">
+    <img src="logo.svg" class="graffiti-logo" alt="Fuckitt's Funhouse">
+  </div>
+  <div class="login-sub">Est. 2024 · Play at Your Own Risk</div>
+  <div class="login-divider"></div>
+  <div class="login-box">
+    <input id="loginUser" type="text" placeholder="Username" autocomplete="username">
+    <input id="loginPass" type="password" placeholder="Password" autocomplete="current-password">
+    <div id="loginErr"></div>
+    <button class="btn-gold" onclick="submitLogin()">Enter the Funhouse</button>
+  </div>
+  <div class="spray-tag">Fuckitt's Funhouse · All Rights Reserved</div>
+</div>
+
+<!-- ══ LOBBY ══ -->
+<div id="lobbyScreen">
+
+  <div class="site-header">
+    <div class="header-inner">
+      <a class="header-logo-wrap" href="index.html">
+        <img src="logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse">
+      </a>
+      <div class="header-right">
+        <div class="user-chip">
+          <span class="dot online" id="statusDot"></span>
+          <span id="userLabel"></span>
+        </div>
+        <button class="btn-ghost" onclick="doLogout()">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="balance-bar">
+    <span class="balance-label">Balance</span>
+    <span class="balance-amount">$<span id="bal">0</span></span>
+  </div>
+
+  <div class="lobby-hero">
+    <h2>Choose Your Game</h2>
+    <p>Pick a game and test your luck</p>
+  </div>
+
+  <div class="game-grid">
+    <a class="game-card" href="coin.html">
+      <div class="game-card-bg coin-bg"></div>
+      <div class="game-card-glow coin-glow"></div>
+      <div class="game-card-content">
+        <div class="game-icon">🪙</div>
+        <div class="game-info">
+          <div class="game-title">Coin Flip</div>
+          <div class="game-desc">Heads or tails — pure 50/50 chance. Double your bet or walk away empty.</div>
+          <span class="game-badge badge-gold">2× Payout</span>
+        </div>
+        <div class="game-arrow">›</div>
+      </div>
+    </a>
+    <a class="game-card" href="dice.html">
+      <div class="game-card-bg dice-bg"></div>
+      <div class="game-card-glow dice-glow"></div>
+      <div class="game-card-content">
+        <div class="game-icon">🎲</div>
+        <div class="game-info">
+          <div class="game-title">Dice Roll</div>
+          <div class="game-desc">Guess the number 1–6. Beat the odds and walk away with 5× your stake.</div>
+          <span class="game-badge badge-blue">5× Payout</span>
+        </div>
+        <div class="game-arrow">›</div>
+      </div>
+    </a>
+    <a class="game-card" href="slots.html">
+      <div class="game-card-bg slots-bg"></div>
+      <div class="game-card-glow slots-glow"></div>
+      <div class="game-card-content">
+        <div class="game-icon">🎰</div>
+        <div class="game-info">
+          <div class="game-title">Slot Machine</div>
+          <div class="game-desc">Spin 3 reels and match symbols. Hit the jackpot for a massive 20× payout.</div>
+          <span class="game-badge badge-purple">Up to 20× Payout</span>
+        </div>
+        <div class="game-arrow">›</div>
+      </div>
+    </a>
+  </div>
+
+  <div class="feed-wrap">
+    <div class="feed-title">📡 Live Activity</div>
+    <div id="feed"><div style="color:var(--muted);font-size:0.85rem;padding:10px 0">No activity yet</div></div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-logo-wrap">
+      <img src="logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse">
+    </div>
+    <div class="footer-tagline">Play Smart · Win Big · No Regrets</div>
+    <div class="footer-links">
+      <a href="coin.html">🪙 Coin Flip</a>
+      <a href="dice.html">🎲 Dice Roll</a>
+      <a href="slots.html">🎰 Slots</a>
+    </div>
+    <div class="spray-tag" style="opacity:0.2;margin-bottom:8px">✦ FUCKITT'S FUNHOUSE ✦ EST. 2024 ✦ PLAY AT YOUR OWN RISK ✦</div>
+    <div class="footer-copy">© 2024 Fuckitt's Funhouse · For entertainment purposes only</div>
+  </footer>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="shared.js"></script>
+<script>
+  // Check session on load
+  isLoggedIn().then(loggedIn => { if (loggedIn) showLobby(); });
+
+  async function submitLogin() {
+    const u   = document.getElementById('loginUser').value.trim();
+    const p   = document.getElementById('loginPass').value;
+    const err = document.getElementById('loginErr');
+    if (!u || !p) { err.textContent = 'Fill in all fields'; return; }
+    err.textContent = 'Logging in...';
+    const res = await apiLogin(u, p);
+    if (res.ok) { showLobby(); updateBal(res.balance); }
+    else err.textContent = res.error;
+  }
+
+  async function showLobby() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('lobbyScreen').style.display = 'block';
+    await initNav();
+    connectRealtime(bet => {
+      const feed = document.getElementById('feed');
+      if (feed.querySelector('div[style]')) feed.innerHTML = '';
+      const icons = { coin:'🪙', dice:'🎲', slots:'🎰' };
+      const win   = bet.outcome.win;
+      const item  = document.createElement('div');
+      item.className = 'feed-item ' + (win ? 'win' : 'lose');
+      item.innerHTML = `<span>${icons[bet.game]} <strong>${bet.username}</strong></span><span class="feed-amt">${win ? '+' : '−'}$${Math.abs(bet.outcome.delta)}</span>`;
+      feed.prepend(item);
+      if (feed.children.length > 10) feed.lastChild.remove();
+    });
+  }
+</script>
+</body>
+</html>
