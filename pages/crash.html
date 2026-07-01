@@ -165,8 +165,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #3a1a0020 0%, transpa
 <script src="../js/shared.js"></script>
 <script src="../js/provably-fair.js"></script>
 <script>
-  guardPage();
-  initNav();
+  guardPage().then(() => initNav());
   renderPFWidget('pfWidget', { serverSeedHash: '—', clientSeed: getClientSeed(), nonce: getNonce() });
 
   // ── Canvas graph ──────────────────────────────────────────
@@ -239,9 +238,9 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #3a1a0020 0%, transpa
   let gameActive = false;
   let serverCrashPoint = null;
 
-  function setQuickBet(n) { document.getElementById('betAmt').value = Math.min(n, currentBalance); updatePotential(); }
+  function setQuickBet(n) { const b=currentBalance||n; document.getElementById('betAmt').value=Math.min(n,b); updatePotential(); }
   function halfBet()   { const el=document.getElementById('betAmt'); el.value=Math.max(1,Math.floor(parseInt(el.value||1)/2)); updatePotential(); }
-  function doubleBet() { const el=document.getElementById('betAmt'); el.value=Math.min(parseInt(el.value||1)*2, currentBalance); updatePotential(); }
+  function doubleBet() { const b=currentBalance||99999; const el=document.getElementById('betAmt'); el.value=Math.min(parseInt(el.value||1)*2,b); updatePotential(); }
 
   function updatePotential() {
     const amt  = parseFloat(document.getElementById('betAmt').value) || 0;
