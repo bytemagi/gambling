@@ -59,3 +59,30 @@ create policy "bets_select_all" on public.bets
 -- ── Realtime ─────────────────────────────────────────────────
 -- Enable realtime on bets table for live feed
 alter publication supabase_realtime add table public.bets;
+
+-- ── Atomic balance functions (called by Edge Function) ───────
+-- Deducts amount only if balance is sufficient, returns new balance
+create or replace function public.deduct_balance(p_amount integer)
+returns integer language plpgsql security definer as $$
+declare new_bal integer;
+begin
+  update public.profiles
+    set balance = balance - p_amount
+    where id = auth.uid() and balance >= p_amount
+    returning balance into new_bal;
+  if not found then
+    raise exception 'Insufficient balance';
+  end if;
+  return new_bal;
+end;
+$$;
+
+-- Credits amount back (winnings)
+create or replace function public.credit_balance(p_amount integer)
+returns void language plpgsql security definer as $$
+begin
+  update public.profiles
+    set balance = balance + p_amount
+    where id = auth.uid();
+end;
+$$;

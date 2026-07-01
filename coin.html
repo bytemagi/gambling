@@ -262,14 +262,13 @@ body {
   guardPage();
   initNav();
 
-  function setQuickBet(n) { document.getElementById('betAmt').value = Math.min(n, parseInt(document.getElementById('bal').textContent)||0); }
+  function setQuickBet(n) { document.getElementById('betAmt').value = Math.min(n, currentBalance); }
   function halfBet()   { const el=document.getElementById('betAmt'); el.value=Math.max(1,Math.floor(parseInt(el.value||1)/2)); }
-  function doubleBet() { const el=document.getElementById('betAmt'); el.value=Math.min(parseInt(el.value||1)*2, parseInt(document.getElementById('bal').textContent)||0); }
+  function doubleBet() { const el=document.getElementById('betAmt'); el.value=Math.min(parseInt(el.value||1)*2, currentBalance); }
 
   async function flip(choice) {
     const amount = parseInt(document.getElementById('betAmt').value) || 0;
-    const bal    = parseInt(document.getElementById('bal').textContent) || 0;
-    if (amount <= 0 || amount > bal) { setResult('Invalid bet amount', 'idle'); return; }
+    if (amount <= 0 || amount > currentBalance) { setResult('Invalid bet amount', 'idle'); return; }
     document.getElementById('btnHeads').disabled = true;
     document.getElementById('btnTails').disabled = true;
     setResult('Flipping...', 'idle');
@@ -279,22 +278,24 @@ body {
     void coin.offsetWidth;
     coin.classList.add('flipping');
 
-    const res = await apiPlaceBet('coin', amount, choice);
+    // Fix #7 — run API and minimum animation delay in parallel
+    const [res] = await Promise.all([
+      apiPlaceBet('coin', amount, choice),
+      new Promise(r => setTimeout(r, 1050))
+    ]);
 
-    setTimeout(() => {
-      coin.classList.remove('flipping');
-      coin.style.transform = res.outcome === 'tails' ? 'rotateY(180deg)' : 'rotateY(0deg)';
-      updateBal(res.balance);
-      document.getElementById('btnHeads').disabled = false;
-      document.getElementById('btnTails').disabled = false;
-      if (res.win) {
-        setResult('🎉 ' + res.outcome.toUpperCase() + ' — YOU WIN $' + amount + '!', 'win');
-        spawnParticles('#d4af37');
-      } else {
-        setResult('💀 ' + res.outcome.toUpperCase() + ' — YOU LOSE $' + amount, 'lose');
-      }
-      addHistory(res.outcome, res.win, amount);
-    }, 1050);
+    coin.classList.remove('flipping');
+    coin.style.transform = res.outcome === 'tails' ? 'rotateY(180deg)' : 'rotateY(0deg)';
+    updateBal(res.balance);
+    document.getElementById('btnHeads').disabled = false;
+    document.getElementById('btnTails').disabled = false;
+    if (res.win) {
+      setResult('🎉 ' + res.outcome.toUpperCase() + ' — YOU WIN $' + amount + '!', 'win');
+      spawnParticles('#d4af37');
+    } else {
+      setResult('💀 ' + res.outcome.toUpperCase() + ' — YOU LOSE $' + amount, 'lose');
+    }
+    addHistory(res.outcome, res.win, amount);
   }
 
   function setResult(msg, cls) {

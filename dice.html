@@ -306,15 +306,14 @@ body {
     document.querySelectorAll('.guess-btn').forEach((b,i) => b.classList.toggle('active', i+1===n));
   }
 
-  function setQuickBet(n) { document.getElementById('betAmt').value = Math.min(n, parseInt(document.getElementById('bal').textContent)||0); updateMaxWin(); }
+  function setQuickBet(n) { document.getElementById('betAmt').value = Math.min(n, currentBalance); updateMaxWin(); }
   function halfBet()   { const el=document.getElementById('betAmt'); el.value=Math.max(1,Math.floor(parseInt(el.value||1)/2)); updateMaxWin(); }
-  function doubleBet() { const el=document.getElementById('betAmt'); el.value=Math.min(parseInt(el.value||1)*2, parseInt(document.getElementById('bal').textContent)||0); updateMaxWin(); }
+  function doubleBet() { const el=document.getElementById('betAmt'); el.value=Math.min(parseInt(el.value||1)*2, currentBalance); updateMaxWin(); }
   function updateMaxWin() { document.getElementById('maxWin').textContent='$'+(parseInt(document.getElementById('betAmt').value||0)*5); }
 
   async function roll() {
     const amount = parseInt(document.getElementById('betAmt').value) || 0;
-    const bal    = parseInt(document.getElementById('bal').textContent) || 0;
-    if (amount <= 0 || amount > bal) { setResult('Invalid bet amount','idle'); return; }
+    if (amount <= 0 || amount > currentBalance) { setResult('Invalid bet amount','idle'); return; }
 
     document.getElementById('btnRoll').disabled = true;
     document.querySelectorAll('.guess-btn').forEach(b => b.disabled = true);
@@ -327,22 +326,23 @@ body {
     void dice.offsetWidth;
     dice.classList.add('rolling');
 
-    const res = await apiPlaceBet('dice', amount, selectedGuess);
+    const [res] = await Promise.all([
+      apiPlaceBet('dice', amount, selectedGuess),
+      new Promise(r => setTimeout(r, 900))
+    ]);
 
-    setTimeout(() => {
-      dice.classList.remove('rolling');
-      dice.style.transform = faceRotations[res.outcome] || faceRotations[1];
-      updateBal(res.balance);
-      document.getElementById('btnRoll').disabled = false;
-      document.querySelectorAll('.guess-btn').forEach(b => b.disabled = false);
-      if (res.win) {
-        setResult('🎉 ROLLED ' + res.outcome + ' — YOU WIN $' + (amount*5) + '! (5×)', 'win');
-        spawnParticles('#4a90e2');
-      } else {
-        setResult('💀 ROLLED ' + res.outcome + ' — YOU LOSE $' + amount, 'lose');
-      }
-      addHistory(res.outcome, selectedGuess, res.win, amount);
-    }, 900);
+    dice.classList.remove('rolling');
+    dice.style.transform = faceRotations[res.outcome] || faceRotations[1];
+    updateBal(res.balance);
+    document.getElementById('btnRoll').disabled = false;
+    document.querySelectorAll('.guess-btn').forEach(b => b.disabled = false);
+    if (res.win) {
+      setResult('🎉 ROLLED ' + res.outcome + ' — YOU WIN $' + (amount*5) + '! (5×)', 'win');
+      spawnParticles('#4a90e2');
+    } else {
+      setResult('💀 ROLLED ' + res.outcome + ' — YOU LOSE $' + amount, 'lose');
+    }
+    addHistory(res.outcome, selectedGuess, res.win, amount);
   }
 
   function setResult(msg, cls) {
