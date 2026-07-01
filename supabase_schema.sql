@@ -31,7 +31,7 @@ create table if not exists public.bets (
   id               bigserial primary key,
   user_id          uuid references public.profiles(id) on delete cascade not null,
   username         text not null,
-  game             text not null,           -- 'coin' | 'dice' | 'slots'
+  game             text not null,           -- 'coin' | 'dice' | 'slots' | 'crash' | 'mines'
   amount           integer not null,
   outcome          jsonb not null,          -- { result, win, delta }
   balance_after    integer not null,
@@ -42,9 +42,28 @@ create table if not exists public.bets (
   created_at       timestamptz default now()
 );
 
+-- ── Mines rounds table (server-authoritative multi-step gameplay) ──
+create table if not exists public.mines_rounds (
+  id               bigserial primary key,
+  user_id          uuid references public.profiles(id) on delete cascade not null,
+  username         text not null,
+  bet_amount       integer not null check (bet_amount > 0),
+  mine_count       integer not null check (mine_count >= 1 and mine_count <= 24),
+  mines            jsonb not null default '[]'::jsonb,
+  revealed         jsonb not null default '[]'::jsonb,
+  status           text not null default 'active' check (status in ('active','lost','cashed_out')),
+  server_seed      text not null,
+  server_seed_hash text not null,
+  client_seed      text not null,
+  nonce            integer not null,
+  created_at       timestamptz default now(),
+  updated_at       timestamptz default now()
+);
+
 -- ── Row Level Security ────────────────────────────────────────
-alter table public.profiles enable row level security;
-alter table public.bets     enable row level security;
+alter table public.profiles     enable row level security;
+alter table public.bets         enable row level security;
+alter table public.mines_rounds enable row level security;
 
 -- Profiles: users can only read/update their own row
 create policy "profiles_select_own" on public.profiles
@@ -59,6 +78,16 @@ create policy "bets_insert_own" on public.bets
 
 create policy "bets_select_all" on public.bets
   for select using (true);
+
+-- Mines rounds: users can only read/write their own rounds
+create policy "mines_rounds_select_own" on public.mines_rounds
+  for select using (auth.uid() = user_id);
+
+create policy "mines_rounds_insert_own" on public.mines_rounds
+  for insert with check (auth.uid() = user_id);
+
+create policy "mines_rounds_update_own" on public.mines_rounds
+  for update using (auth.uid() = user_id);
 
 -- ── Realtime ─────────────────────────────────────────────────
 -- Enable realtime on bets table for live feed

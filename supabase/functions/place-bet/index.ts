@@ -3,8 +3,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const SYMBOLS = ['🍒','🍋','🍊','⭐','💎','7️⃣'];
 
 // ── Provably fair RNG ─────────────────────────────────────────
-// outcome = HMAC-SHA256(serverSeed, clientSeed:nonce)
-// Must match deriveOutcome() in provably-fair.js exactly
 
 async function hmac(serverSeed: string, message: string): Promise<string> {
   const enc = new TextEncoder();
@@ -22,7 +20,7 @@ function deriveOutcome(game: string, hex: string, amount: number) {
   const v0 = parseInt(hex.slice(0, 8), 16);
   if (game === 'coin') {
     const outcome = v0 % 2 === 0 ? 'heads' : 'tails';
-    return { outcome, win: false, delta: 0 }; // win set by caller with choice
+    return { outcome, win: false, delta: 0 };
   }
   if (game === 'dice') {
     const outcome = (v0 % 6) + 1;
@@ -44,24 +42,18 @@ function deriveOutcome(game: string, hex: string, amount: number) {
     return { outcome: reels, win: delta > 0, delta };
   }
   if (game === 'crash') {
-    // Crash point derived from first 8 hex chars, scaled to 1.00–100.00×
-    // Same formula must be mirrored in provably-fair.js deriveOutcome()
     const v = parseInt(hex.slice(0, 8), 16);
     const crashPoint = Math.max(1.00, parseFloat(((100 / (1 - (v / 0xFFFFFFFF) * 0.99))).toFixed(2)));
-    return { outcome: crashPoint, win: false, delta: 0 }; // win/delta set by applyChoice
+    return { outcome: crashPoint, win: false, delta: 0 };
   }
   if (game === 'mines') {
-    // Derive 25 mine positions from successive 2-byte chunks of the HMAC
-    // choice = { mines: number, revealed: number[] } — cells player revealed before cashing out
     const totalCells = 25;
     const positions: number[] = [];
     for (let i = 0; i < totalCells; i++) {
       const chunk = parseInt(hex.slice(i*2, i*2+2), 16);
       positions.push(chunk % totalCells);
     }
-    // Deduplicate to get unique mine positions
-    const mineSet = [...new Set(positions)];
-    return { outcome: mineSet, win: false, delta: 0 };
+    return { outcome: [...new Set(positions)], win: false, delta: 0 };
   }
   throw new Error(`Unknown game: ${game}`);
 }
@@ -76,25 +68,27 @@ function applyChoice(game: string, derived: ReturnType<typeof deriveOutcome>, ch
     return { ...derived, win, delta: win ? amount * 5 : -amount };
   }
   if (game === 'crash') {
-    // choice = cashoutAt multiplier (e.g. 2.5)
-    const cashoutAt  = typeof choice === 'number' ? choice : parseFloat(choice as string);
+    const cashoutAt = typeof choice === 'number' ? choice : parseFloat(choice as string);
     const crashPoint = derived.outcome as number;
-    const win        = cashoutAt <= crashPoint;
-    const delta      = win ? Math.floor(amount * cashoutAt) - amount : -amount;
-    return { ...derived, outcome: crashPoint, win, delta, cashoutAt };
-  }
-  if (game === 'mines') {
-    const { mineCount, revealed } = choice as { mineCount: number; revealed: number[] };
-    const mines = (derived.outcome as number[]).slice(0, mineCount);
-    const hitMine = revealed.some((cell: number) => mines.includes(cell));
-    if (hitMine) return { ...derived, outcome: mines, win: false, delta: -amount };
-    const multiplier = revealed.length > 0
-      ? parseFloat((Math.pow(25 / (25 - mineCount), revealed.length) * 0.97).toFixed(2))
-      : 0;
-    const delta = revealed.length > 0 ? Math.floor(amount * multiplier) - amount : -amount;
-    return { ...derived, outcome: mines, win: delta > 0, delta, multiplier };
+    const safeCashoutAt = Number.isFinite(cashoutAt) && cashoutAt >= 1 ? cashoutAt : 1;
+    const win = safeCashoutAt <= crashPoint;
+    const delta = win ? Math.floor(amount * safeCashoutAt) - amount : -amount;
+    return { ...derived, outcome: crashPoint, win, delta, cashoutAt: safeCashoutAt };
   }
   return derived;
+}
+
+function minesMultiplier(mineCount: number, safeRevealed: number): number {
+  if (safeRevealed <= 0) return 0;
+  return parseFloat((Math.pow(25 / (25 - mineCount), safeRevealed) * 0.97).toFixed(2));
+}
+
+function makeServerSeed(): string {
+  return crypto.randomUUID().replace(/-/g,'') + crypto.randomUUID().replace(/-/g,'');
+}
+
+function commonHeaders() {
+  return { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
 }
 
 Deno.serve(async (req) => {
@@ -103,7 +97,7 @@ Deno.serve(async (req) => {
   }
 
   const authHeader = req.headers.get('Authorization');
-  if (!authHeader) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+  if (!authHeader) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: commonHeaders() });
 
   const db = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -114,56 +108,239 @@ Deno.serve(async (req) => {
   const { game, amount, choice, clientSeed, nonce } = await req.json();
 
   if (!['coin','dice','slots','crash','mines'].includes(game))
-    return new Response(JSON.stringify({ error: 'Invalid game' }), { status: 400 });
+    return new Response(JSON.stringify({ error: 'Invalid game' }), { status: 400, headers: commonHeaders() });
   if (!Number.isInteger(amount) || amount <= 0 || amount > 100000)
-    return new Response(JSON.stringify({ error: 'Invalid amount' }), { status: 400 });
+    return new Response(JSON.stringify({ error: 'Invalid amount' }), { status: 400, headers: commonHeaders() });
   if (!clientSeed || typeof clientSeed !== 'string' || clientSeed.length > 128)
-    return new Response(JSON.stringify({ error: 'Invalid client seed' }), { status: 400 });
+    return new Response(JSON.stringify({ error: 'Invalid client seed' }), { status: 400, headers: commonHeaders() });
   if (!Number.isInteger(nonce) || nonce < 0)
-    return new Response(JSON.stringify({ error: 'Invalid nonce' }), { status: 400 });
-
-  // Generate server seed for this bet
-  const serverSeedRaw  = crypto.randomUUID().replace(/-/g,'') + crypto.randomUUID().replace(/-/g,'');
-  const serverSeedHash = await hashSeed(serverSeedRaw);
-
-  // Derive outcome from HMAC
-  const hex     = await hmac(serverSeedRaw, `${clientSeed}:${nonce}`);
-  const derived = deriveOutcome(game, hex, amount);
-  const result  = applyChoice(game, derived, choice, amount);
-
-  // Atomic balance deduction
-  const { data: newBal, error: rpcErr } = await db.rpc('deduct_balance', { p_amount: amount });
-  if (rpcErr) return new Response(JSON.stringify({ error: rpcErr.message }), { status: 400 });
-
-  const payout   = result.delta + amount; // net payout (0 = push, >0 = win, amount already deducted)
-  const finalBal = (newBal as number) + payout;
-  if (payout > 0) await db.rpc('credit_balance', { p_amount: payout });
+    return new Response(JSON.stringify({ error: 'Invalid nonce' }), { status: 400, headers: commonHeaders() });
 
   const { data: profile } = await db.from('profiles').select('username').single();
   const { data: { user } } = await db.auth.getUser();
+  if (!user?.id) return new Response(JSON.stringify({ error: 'Unauthorized user' }), { status: 401, headers: commonHeaders() });
+
+  if (game === 'mines') {
+    const minesChoice = choice as { action?: string; mineCount?: number; roundId?: number; cell?: number };
+
+    if (minesChoice?.action === 'start') {
+      const mineCount = Number(minesChoice.mineCount);
+      if (!Number.isInteger(mineCount) || mineCount < 1 || mineCount > 24) {
+        return new Response(JSON.stringify({ error: 'Invalid mine count' }), { status: 400, headers: commonHeaders() });
+      }
+
+      const serverSeedRaw = makeServerSeed();
+      const serverSeedHash = await hashSeed(serverSeedRaw);
+      const hex = await hmac(serverSeedRaw, `${clientSeed}:${nonce}`);
+      const derived = deriveOutcome('mines', hex, amount);
+      const mines = (derived.outcome as number[]).slice(0, mineCount);
+
+      const { data: newBal, error: rpcErr } = await db.rpc('deduct_balance', { p_amount: amount });
+      if (rpcErr) return new Response(JSON.stringify({ error: rpcErr.message }), { status: 400, headers: commonHeaders() });
+
+      const { data: insertedRound, error: roundErr } = await db.from('mines_rounds').insert({
+        user_id: user.id,
+        username: profile?.username ?? 'unknown',
+        bet_amount: amount,
+        mine_count: mineCount,
+        mines,
+        revealed: [],
+        status: 'active',
+        server_seed: serverSeedRaw,
+        server_seed_hash: serverSeedHash,
+        client_seed: clientSeed,
+        nonce,
+      }).select('id').single();
+
+      if (roundErr || !insertedRound?.id) {
+        await db.rpc('credit_balance', { p_amount: amount });
+        return new Response(JSON.stringify({ error: roundErr?.message ?? 'Failed to create round' }), { status: 500, headers: commonHeaders() });
+      }
+
+      return new Response(JSON.stringify({
+        ok: true,
+        action: 'start',
+        roundId: insertedRound.id,
+        balance: newBal,
+        serverSeedHash,
+        clientSeed,
+        nonce,
+      }), { headers: commonHeaders() });
+    }
+
+    if (minesChoice?.action === 'reveal') {
+      const roundId = Number(minesChoice.roundId);
+      const cell = Number(minesChoice.cell);
+      if (!Number.isInteger(roundId) || roundId <= 0) return new Response(JSON.stringify({ error: 'Invalid roundId' }), { status: 400, headers: commonHeaders() });
+      if (!Number.isInteger(cell) || cell < 0 || cell > 24) return new Response(JSON.stringify({ error: 'Invalid cell' }), { status: 400, headers: commonHeaders() });
+
+      const { data: round, error: roundErr } = await db.from('mines_rounds').select('*').eq('id', roundId).single();
+      if (roundErr || !round) return new Response(JSON.stringify({ error: 'Round not found' }), { status: 404, headers: commonHeaders() });
+      if (round.user_id !== user.id) return new Response(JSON.stringify({ error: 'Forbidden round access' }), { status: 403, headers: commonHeaders() });
+      if (round.status !== 'active') return new Response(JSON.stringify({ error: 'Round already settled' }), { status: 400, headers: commonHeaders() });
+
+      const mines: number[] = Array.isArray(round.mines) ? round.mines : [];
+      const revealed: number[] = Array.isArray(round.revealed) ? round.revealed : [];
+      if (revealed.includes(cell)) return new Response(JSON.stringify({ error: 'Cell already revealed' }), { status: 400, headers: commonHeaders() });
+
+      const hitMine = mines.includes(cell);
+
+      if (hitMine) {
+        const { error: updateErr } = await db.from('mines_rounds')
+          .update({ status: 'lost', updated_at: new Date().toISOString() })
+          .eq('id', roundId);
+        if (updateErr) return new Response(JSON.stringify({ error: updateErr.message }), { status: 500, headers: commonHeaders() });
+
+        const { data: profileNow } = await db.from('profiles').select('balance').single();
+        const finalBal = Number(profileNow?.balance ?? 0);
+
+        await db.from('bets').insert({
+          user_id: user.id,
+          username: round.username,
+          game: 'mines',
+          amount: round.bet_amount,
+          outcome: { result: mines, win: false, delta: -round.bet_amount },
+          balance_after: finalBal,
+          server_seed: round.server_seed,
+          server_seed_hash: round.server_seed_hash,
+          client_seed: round.client_seed,
+          nonce: round.nonce,
+        });
+
+        return new Response(JSON.stringify({
+          ok: true,
+          action: 'reveal',
+          hitMine: true,
+          cell,
+          mines,
+          revealed,
+          win: false,
+          delta: -round.bet_amount,
+          balance: finalBal,
+          serverSeed: round.server_seed,
+          serverSeedHash: round.server_seed_hash,
+          clientSeed: round.client_seed,
+          nonce: round.nonce,
+        }), { headers: commonHeaders() });
+      }
+
+      const newRevealed = [...revealed, cell];
+      const { error: updateErr } = await db.from('mines_rounds')
+        .update({ revealed: newRevealed, updated_at: new Date().toISOString() })
+        .eq('id', roundId);
+      if (updateErr) return new Response(JSON.stringify({ error: updateErr.message }), { status: 500, headers: commonHeaders() });
+
+      const mult = minesMultiplier(round.mine_count, newRevealed.length);
+      const projectedPayout = Math.floor(round.bet_amount * mult);
+
+      const { data: profileNow } = await db.from('profiles').select('balance').single();
+      const balNow = Number(profileNow?.balance ?? 0);
+
+      return new Response(JSON.stringify({
+        ok: true,
+        action: 'reveal',
+        hitMine: false,
+        cell,
+        minesCount: round.mine_count,
+        revealed: newRevealed,
+        multiplier: mult,
+        projectedPayout,
+        balance: balNow,
+        serverSeedHash: round.server_seed_hash,
+        clientSeed: round.client_seed,
+        nonce: round.nonce,
+      }), { headers: commonHeaders() });
+    }
+
+    if (minesChoice?.action === 'cashout') {
+      const roundId = Number(minesChoice.roundId);
+      if (!Number.isInteger(roundId) || roundId <= 0) return new Response(JSON.stringify({ error: 'Invalid roundId' }), { status: 400, headers: commonHeaders() });
+
+      const { data: round, error: roundErr } = await db.from('mines_rounds').select('*').eq('id', roundId).single();
+      if (roundErr || !round) return new Response(JSON.stringify({ error: 'Round not found' }), { status: 404, headers: commonHeaders() });
+      if (round.user_id !== user.id) return new Response(JSON.stringify({ error: 'Forbidden round access' }), { status: 403, headers: commonHeaders() });
+      if (round.status !== 'active') return new Response(JSON.stringify({ error: 'Round already settled' }), { status: 400, headers: commonHeaders() });
+
+      const revealed: number[] = Array.isArray(round.revealed) ? round.revealed : [];
+      if (revealed.length === 0) return new Response(JSON.stringify({ error: 'Reveal at least one safe cell before cashout' }), { status: 400, headers: commonHeaders() });
+
+      const mult = minesMultiplier(round.mine_count, revealed.length);
+      const totalPayout = Math.floor(round.bet_amount * mult);
+      const delta = totalPayout - round.bet_amount;
+      if (totalPayout > 0) await db.rpc('credit_balance', { p_amount: totalPayout });
+
+      const { error: updateErr } = await db.from('mines_rounds')
+        .update({ status: 'cashed_out', updated_at: new Date().toISOString() })
+        .eq('id', roundId);
+      if (updateErr) return new Response(JSON.stringify({ error: updateErr.message }), { status: 500, headers: commonHeaders() });
+
+      const { data: profileNow } = await db.from('profiles').select('balance').single();
+      const finalBal = Number(profileNow?.balance ?? 0);
+
+      await db.from('bets').insert({
+        user_id: user.id,
+        username: round.username,
+        game: 'mines',
+        amount: round.bet_amount,
+        outcome: { result: round.mines, win: delta > 0, delta },
+        balance_after: finalBal,
+        server_seed: round.server_seed,
+        server_seed_hash: round.server_seed_hash,
+        client_seed: round.client_seed,
+        nonce: round.nonce,
+      });
+
+      return new Response(JSON.stringify({
+        ok: true,
+        action: 'cashout',
+        win: delta > 0,
+        delta,
+        multiplier: mult,
+        outcome: round.mines,
+        balance: finalBal,
+        serverSeed: round.server_seed,
+        serverSeedHash: round.server_seed_hash,
+        clientSeed: round.client_seed,
+        nonce: round.nonce,
+      }), { headers: commonHeaders() });
+    }
+
+    return new Response(JSON.stringify({ error: 'Invalid mines action' }), { status: 400, headers: commonHeaders() });
+  }
+
+  const serverSeedRaw  = makeServerSeed();
+  const serverSeedHash = await hashSeed(serverSeedRaw);
+  const hex            = await hmac(serverSeedRaw, `${clientSeed}:${nonce}`);
+  const derived        = deriveOutcome(game, hex, amount);
+  const result         = applyChoice(game, derived, choice, amount);
+
+  const { data: newBal, error: rpcErr } = await db.rpc('deduct_balance', { p_amount: amount });
+  if (rpcErr) return new Response(JSON.stringify({ error: rpcErr.message }), { status: 400, headers: commonHeaders() });
+
+  const payout   = result.delta + amount;
+  const finalBal = (newBal as number) + payout;
+  if (payout > 0) await db.rpc('credit_balance', { p_amount: payout });
 
   await db.from('bets').insert({
-    user_id:         user?.id,
-    username:        profile?.username ?? 'unknown',
+    user_id:          user.id,
+    username:         profile?.username ?? 'unknown',
     game,
     amount,
-    outcome:         { result: result.outcome, win: result.win, delta: result.delta },
-    balance_after:   finalBal,
-    server_seed:     serverSeedRaw,   // revealed immediately (player can verify)
+    outcome:          { result: result.outcome, win: result.win, delta: result.delta },
+    balance_after:    finalBal,
+    server_seed:      serverSeedRaw,
     server_seed_hash: serverSeedHash,
-    client_seed:     clientSeed,
+    client_seed:      clientSeed,
     nonce,
   });
 
   return new Response(JSON.stringify({
     ok: true,
     ...result,
-    balance:          finalBal,
-    serverSeed:       serverSeedRaw,   // revealed so player can verify
+    balance: finalBal,
+    serverSeed: serverSeedRaw,
     serverSeedHash,
     clientSeed,
     nonce,
-  }), {
-    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-  });
+  }), { headers: commonHeaders() });
 });

@@ -169,7 +169,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #3a1a0020 0%, transpa
 <script src="../js/sounds.js"></script>
 <script src="../js/provably-fair.js"></script>
 <script>
-  guardPage().then(() => initNav());
+  guardPage();
   renderPFWidget('pfWidget', { serverSeedHash: '—', clientSeed: getClientSeed(), nonce: getNonce() });
 
   // ── Canvas graph ──────────────────────────────────────────
@@ -265,7 +265,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #3a1a0020 0%, transpa
     const amount     = parseInt(document.getElementById('betAmt').value) || 0;
     const cashoutAt  = parseFloat(document.getElementById('autoCashout').value) || 2.0;
 
-    if (amount <= 0 || amount > currentBalance) { setResult('Invalid bet amount', 'idle'); return; }
+    if (amount <= 0) { setResult('Invalid bet amount', 'idle'); return; }
     if (cashoutAt < 1.01) { setResult('Auto-cashout must be ≥ 1.01×', 'idle'); return; }
 
     document.getElementById('btnPlay').disabled = true;
@@ -352,7 +352,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #3a1a0020 0%, transpa
     renderPFVerify('pfWidget', {
       serverSeed: res.serverSeed, serverSeedHash: res.serverSeedHash,
       clientSeed: res.clientSeed, nonce: res.nonce,
-      game: 'crash', outcome: res.outcome
+      game: 'crash', outcome: serverCrashPoint
     });
   }
 

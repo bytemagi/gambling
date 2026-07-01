@@ -253,7 +253,7 @@
     connectRealtime(bet => {
       const feed = document.getElementById('feed');
       if (feed.querySelector('div[style]')) feed.innerHTML = '';
-      const icons = { coin:'🪙', dice:'🎲', slots:'🎰' };
+      const icons = { coin:'🪙', dice:'🎲', slots:'🎰', crash:'🚀', mines:'💣' };
       const win   = bet.outcome.win;
       const item  = document.createElement('div');
       item.className = 'feed-item ' + (win ? 'win' : 'lose');

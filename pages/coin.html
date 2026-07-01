@@ -147,7 +147,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #7a5c0020 0%, transpa
 <script src="../js/sounds.js"></script>
 <script src="../js/provably-fair.js"></script>
 <script>
-  guardPage().then(() => initNav());
+  guardPage();
   renderPFWidget('pfWidget', { serverSeedHash: '—', clientSeed: getClientSeed(), nonce: getNonce() });
 
   function setQuickBet(n) { const b=currentBalance||n; document.getElementById('betAmt').value=Math.min(n,b); }
@@ -156,7 +156,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #7a5c0020 0%, transpa
 
   async function flip(choice) {
     const amount = parseInt(document.getElementById('betAmt').value) || 0;
-    if (amount <= 0 || amount > currentBalance) { setResult('Invalid bet amount', 'idle'); return; }
+    if (amount <= 0) { setResult('Invalid bet amount', 'idle'); return; }
     document.getElementById('btnHeads').disabled = true;
     document.getElementById('btnTails').disabled = true;
     setResult('Flipping...', 'idle');
@@ -173,10 +173,13 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #7a5c0020 0%, transpa
     ]);
 
     coin.classList.remove('flipping');
-    coin.style.transform = res.outcome === 'tails' ? 'rotateY(180deg)' : 'rotateY(0deg)';
-    updateBal(res.balance);
     document.getElementById('btnHeads').disabled = false;
     document.getElementById('btnTails').disabled = false;
+
+    if (!res.ok) { setResult('Error: ' + res.error, 'idle'); return; }
+
+    coin.style.transform = res.outcome === 'tails' ? 'rotateY(180deg)' : 'rotateY(0deg)';
+    updateBal(res.balance);
     if (res.win) {
       soundWin();
       setResult('🎉 ' + res.outcome.toUpperCase() + ' — YOU WIN $' + amount + '!', 'win');

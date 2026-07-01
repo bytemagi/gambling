@@ -217,7 +217,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #4a0a6e20 0%, transpa
 <script src="../js/sounds.js"></script>
 <script src="../js/provably-fair.js"></script>
 <script>
-  guardPage().then(() => initNav());
+  guardPage();
   renderPFWidget('pfWidget', { serverSeedHash: '—', clientSeed: getClientSeed(), nonce: getNonce() });
 
   const SYMBOLS = ['🍒','🍋','🍊','⭐','💎','7️⃣'];
@@ -235,7 +235,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #4a0a6e20 0%, transpa
 
   async function spin() {
     const amount = parseInt(document.getElementById('betAmt').value) || 0;
-    if (amount <= 0 || amount > currentBalance) { setResult('Invalid bet amount','idle'); return; }
+    if (amount <= 0) { setResult('Invalid bet amount','idle'); return; }
 
     document.getElementById('btnSpin').disabled = true;
     setResult('Spinning...','idle');
@@ -244,6 +244,10 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #4a0a6e20 0%, transpa
       apiPlaceBet('slots', amount, null),
       new Promise(r => setTimeout(r, 1400))
     ]);
+
+    document.getElementById('btnSpin').disabled = false;
+
+    if (!res.ok) { setResult('Error: ' + res.error, 'idle'); return; }
 
     [1,2,3].forEach((n,i) => {
       const strip = document.getElementById('rs'+n);
@@ -265,9 +269,8 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #4a0a6e20 0%, transpa
       strip.style.transform = '';
     });
     updateBal(res.balance);
-    document.getElementById('btnSpin').disabled = false;
-      const gain = Math.abs(res.delta);
-      const isJackpot = res.delta >= amount * 5;
+    const gain = Math.abs(res.delta);
+    const isJackpot = res.delta >= amount * 5;
       if (res.win && isJackpot) {
         soundJackpot();
         setResult('💎 JACKPOT! YOU WIN $' + gain + '!', 'jackpot-win');

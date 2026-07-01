@@ -208,7 +208,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #1a3a6e20 0%, transpa
 <script src="../js/sounds.js"></script>
 <script src="../js/provably-fair.js"></script>
 <script>
-  guardPage().then(() => initNav());
+  guardPage();
   renderPFWidget('pfWidget', { serverSeedHash: '—', clientSeed: getClientSeed(), nonce: getNonce() });
 
   let selectedGuess = 1;
@@ -235,7 +235,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #1a3a6e20 0%, transpa
 
   async function roll() {
     const amount = parseInt(document.getElementById('betAmt').value) || 0;
-    if (amount <= 0 || amount > currentBalance) { setResult('Invalid bet amount','idle'); return; }
+    if (amount <= 0) { setResult('Invalid bet amount','idle'); return; }
 
     document.getElementById('btnRoll').disabled = true;
     document.querySelectorAll('.guess-btn').forEach(b => b.disabled = true);
@@ -254,10 +254,13 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #1a3a6e20 0%, transpa
     ]);
 
     dice.classList.remove('rolling');
-    dice.style.transform = faceRotations[res.outcome] || faceRotations[1];
-    updateBal(res.balance);
     document.getElementById('btnRoll').disabled = false;
     document.querySelectorAll('.guess-btn').forEach(b => b.disabled = false);
+
+    if (!res.ok) { setResult('Error: ' + res.error, 'idle'); return; }
+
+    dice.style.transform = faceRotations[res.outcome] || faceRotations[1];
+    updateBal(res.balance);
     if (res.win) {
       soundWin();
       setResult('🎉 ROLLED ' + res.outcome + ' — YOU WIN $' + (amount*5) + '! (5×)', 'win');

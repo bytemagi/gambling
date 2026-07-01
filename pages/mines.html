@@ -181,14 +181,18 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #00b89420 0%, transpa
 <script src="../js/sounds.js"></script>
 <script src="../js/provably-fair.js"></script>
 <script>
-  guardPage().then(() => initNav());
+  guardPage();
   renderPFWidget('pfWidget', { serverSeedHash: '—', clientSeed: getClientSeed(), nonce: getNonce() });
 
   let selectedMines = 3;
   let gameActive    = false;
   let revealed      = [];   // cell indices revealed so far
-  let minePositions = [];   // revealed after cashout/hit
+  let minePositions = [];   // revealed from server on lose/cashout
   let betAmount     = 0;
+  let activeRoundId = null;
+  let activeServerSeedHash = '—';
+  let activeClientSeed = getClientSeed();
+  let activeNonce = getNonce();
 
   function setQuickBet(n) { const b=currentBalance||n; document.getElementById('betAmt').value=Math.min(n,b); }
   function halfBet()   { const el=document.getElementById('betAmt'); el.value=Math.max(1,Math.floor(parseInt(el.value||1)/2)); }
@@ -228,65 +232,105 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #00b89420 0%, transpa
 
   async function startGame() {
     betAmount = parseInt(document.getElementById('betAmt').value) || 0;
-    if (betAmount <= 0 || betAmount > currentBalance) { setResult('Invalid bet amount', 'idle'); return; }
+    if (betAmount <= 0) { setResult('Invalid bet amount', 'idle'); return; }
 
-    gameActive    = true;
-    revealed      = [];
+    document.getElementById('btnStart').disabled = true;
+    setButtonLoading('btnStart', true, '💣 Start Game');
+
+    const nonceForRound = incrementNonce();
+    const clientSeed = getClientSeed();
+
+    const res = await apiPlaceBet('mines', betAmount, {
+      action: 'start',
+      mineCount: selectedMines
+    }, clientSeed, nonceForRound);
+
+    if (!res.ok) {
+      setResult('Error: ' + res.error, 'idle');
+      setButtonLoading('btnStart', false, '💣 Start Game');
+      document.getElementById('btnStart').disabled = false;
+      return;
+    }
+
+    activeRoundId = res.roundId;
+    activeServerSeedHash = res.serverSeedHash || '—';
+    activeClientSeed = res.clientSeed || clientSeed;
+    activeNonce = res.nonce ?? nonceForRound;
+
+    gameActive = true;
+    revealed = [];
     minePositions = [];
+    updateBal(res.balance);
 
-    document.getElementById('btnStart').disabled   = true;
     document.getElementById('minesArena').style.display = 'block';
-    document.getElementById('btnCashout').style.display = 'block';
     document.querySelectorAll('.mine-btn').forEach(b => b.disabled = true);
     document.getElementById('betAmt').disabled = true;
     document.getElementById('mineCount').textContent = selectedMines;
 
     buildGrid(false);
     updateArena();
+    document.getElementById('btnCashout').style.display = 'block';
+    document.getElementById('btnCashout').disabled = true;
+    renderPFWidget('pfWidget', { serverSeedHash: activeServerSeedHash, clientSeed: activeClientSeed, nonce: activeNonce });
     setResult('Reveal safe cells — cash out any time!', 'idle');
+    setButtonLoading('btnStart', false, '💣 Start Game');
   }
 
   async function revealCell(idx) {
-    if (!gameActive || revealed.includes(idx)) return;
+    if (!gameActive || revealed.includes(idx) || !activeRoundId) return;
 
-    // Temporarily reveal as pending
     const cell = document.querySelector(`.mine-cell[data-idx="${idx}"]`);
-    cell.style.opacity = '0.5';
+    if (!cell) return;
+    cell.onclick = null;
 
-    // Send to server with current revealed list + this new cell
-    const newRevealed = [...revealed, idx];
-    const res = await apiPlaceBet('mines', betAmount, { mineCount: selectedMines, revealed: newRevealed });
+    const res = await apiPlaceBet('mines', betAmount, {
+      action: 'reveal',
+      roundId: activeRoundId,
+      cell: idx
+    }, activeClientSeed, activeNonce);
 
-    cell.style.opacity = '1';
+    if (!res.ok) {
+      setResult('Error: ' + res.error, 'idle');
+      return;
+    }
 
-    if (!res.ok) { setResult('Error: ' + res.error, 'idle'); return; }
-
-    minePositions = res.outcome;
-
-    if (!res.win && res.delta === -betAmount) {
-      // Hit a mine
+    if (res.hitMine) {
       gameActive = false;
+      minePositions = res.mines || [];
       cell.className = 'mine-cell revealed-mine';
       cell.textContent = '💣';
+      soundLose();
+      setResult('💥 You hit a mine and lost this round.', 'lose');
       showAllMines(minePositions, idx);
-      updateBal(res.balance);
+      document.getElementById('btnCashout').disabled = true;
       document.getElementById('btnCashout').style.display = 'none';
-      soundMineExplode(); setResult('💥 BOOM! Hit a mine — LOSE $' + betAmount, 'lose');
-      addHistory(minePositions.length, revealed.length, false, betAmount, res.delta);
-      renderPFVerify('pfWidget', { serverSeed: res.serverSeed, serverSeedHash: res.serverSeedHash, clientSeed: res.clientSeed, nonce: res.nonce, game: 'mines', outcome: res.outcome });
+      updateBal(res.balance);
+      addHistory(selectedMines, revealed.length, false, betAmount, -betAmount);
+      if (res.serverSeed) {
+        renderPFVerify('pfWidget', {
+          serverSeed: res.serverSeed,
+          serverSeedHash: res.serverSeedHash || activeServerSeedHash,
+          clientSeed: res.clientSeed || activeClientSeed,
+          nonce: res.nonce ?? activeNonce,
+          game: 'mines',
+          outcome: res.mines || []
+        });
+      }
       endGame();
-    } else {
-      // Safe cell
-      revealed = newRevealed;
-      cell.className = 'mine-cell revealed-safe';
-      cell.textContent = '💎';
-      updateArena();
-      soundMineReveal(); setResult('✅ Safe! Keep going or cash out · ' + revealed.length + ' revealed', 'win');
+      return;
     }
+
+    revealed = Array.isArray(res.revealed) ? res.revealed : [...revealed, idx];
+    cell.className = 'mine-cell revealed-safe';
+    cell.textContent = '💎';
+    updateArena();
+    document.getElementById('btnCashout').disabled = revealed.length === 0;
+    soundMineReveal();
+    setResult('✅ Safe! Keep going or cash out · ' + revealed.length + ' revealed', 'win');
   }
 
   async function cashout() {
-    if (!gameActive || revealed.length === 0) {
+    if (!gameActive || revealed.length === 0 || !activeRoundId) {
       setResult('Reveal at least one cell before cashing out', 'idle');
       return;
     }
@@ -294,18 +338,35 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #00b89420 0%, transpa
     gameActive = false;
     document.getElementById('btnCashout').disabled = true;
 
-    const res = await apiPlaceBet('mines', betAmount, { mineCount: selectedMines, revealed });
+    const res = await apiPlaceBet('mines', betAmount, {
+      action: 'cashout',
+      roundId: activeRoundId
+    }, activeClientSeed, activeNonce);
 
-    minePositions = res.outcome;
+    if (!res.ok) {
+      setResult('Error: ' + res.error, 'idle');
+      endGame();
+      return;
+    }
+
+    minePositions = res.outcome || [];
     showAllMines(minePositions, -1);
     updateBal(res.balance);
     document.getElementById('btnCashout').style.display = 'none';
 
     const profit = res.delta;
-    const mult   = res.multiplier || calcMultiplier(selectedMines, revealed.length);
-    soundWin(); setResult('💰 CASHED OUT ' + mult.toFixed(2) + '× — WIN $' + (betAmount + profit) + '!', 'win');
+    const mult = res.multiplier || calcMultiplier(selectedMines, revealed.length);
+    soundWin();
+    setResult('💰 CASHED OUT ' + mult.toFixed(2) + '× — WIN $' + (betAmount + profit) + '!', 'win');
     addHistory(selectedMines, revealed.length, true, betAmount, profit);
-    renderPFVerify('pfWidget', { serverSeed: res.serverSeed, serverSeedHash: res.serverSeedHash, clientSeed: res.clientSeed, nonce: res.nonce, game: 'mines', outcome: res.outcome });
+    renderPFVerify('pfWidget', {
+      serverSeed: res.serverSeed,
+      serverSeedHash: res.serverSeedHash || activeServerSeedHash,
+      clientSeed: res.clientSeed || activeClientSeed,
+      nonce: res.nonce ?? activeNonce,
+      game: 'mines',
+      outcome: res.outcome || []
+    });
     endGame();
   }
 
@@ -324,7 +385,8 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #00b89420 0%, transpa
     document.getElementById('btnStart').disabled = false;
     document.querySelectorAll('.mine-btn').forEach(b => b.disabled = false);
     document.getElementById('betAmt').disabled = false;
-    // Disable all remaining cells
+    document.getElementById('btnCashout').style.display = 'none';
+    activeRoundId = null;
     document.querySelectorAll('.mine-cell').forEach(c => { c.classList.add('disabled'); c.onclick = null; });
   }
 

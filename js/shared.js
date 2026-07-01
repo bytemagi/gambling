@@ -78,27 +78,57 @@ async function apiGetBalance() {
 // ── Bet ───────────────────────────────────────────────────────
 // Game logic runs server-side in the Edge Function (Fix #1 + #2)
 
-async function apiPlaceBet(game, amount, choice) {
-  const session = await getSession();
-  if (!session) return { ok: false, error: 'Not logged in' };
+async function apiPlaceBet(game, amount, choice, providedClientSeed = null, providedNonce = null) {
+  try {
+    const session = await getSession();
+    if (!session) return { ok: false, error: 'Not logged in' };
 
-  const clientSeed = getClientSeed();
-  const nonce      = incrementNonce();
+    // Validate balance before placing bet
+    const balance = await apiGetBalance();
+    if (amount > balance) {
+      return { ok: false, error: 'Insufficient balance' };
+    }
 
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/place-bet`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify({ game, amount, choice, clientSeed, nonce }),
-  });
+    const clientSeed = providedClientSeed || getClientSeed();
+    const nonce      = Number.isInteger(providedNonce) ? providedNonce : incrementNonce();
 
-  const data = await res.json();
-  if (!res.ok) return { ok: false, error: data.error ?? 'Server error' };
+    let res;
+    try {
+      res = await fetch(`${SUPABASE_URL}/functions/v1/place-bet`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ game, amount, choice, clientSeed, nonce }),
+      });
+    } catch (networkErr) {
+      return { ok: false, error: 'Network error while placing bet' };
+    }
 
-  currentBalance = data.balance;
-  return { ok: true, ...data };
+    let data = null;
+    try {
+      data = await res.json();
+    } catch (parseErr) {
+      data = null;
+    }
+
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: data?.error ?? `Server error (${res.status})`,
+      };
+    }
+
+    if (!data || typeof data.balance !== 'number') {
+      return { ok: false, error: 'Invalid server response' };
+    }
+
+    currentBalance = data.balance;
+    return { ok: true, ...data };
+  } catch (err) {
+    return { ok: false, error: 'Unexpected error while placing bet' };
+  }
 }
 
 // ── Realtime feed ─────────────────────────────────────────────
@@ -124,7 +154,8 @@ function connectRealtime(onBet) {
 
 async function guardPage() {
   const loggedIn = await isLoggedIn();
-  if (!loggedIn) window.location.href = 'index.html';
+  if (!loggedIn) { window.location.href = 'index.html'; return; }
+  await initNav();
 }
 
 async function initNav() {
@@ -133,7 +164,6 @@ async function initNav() {
   currentBalance = profile.balance;
   const ul  = document.getElementById('userLabel');
   const bal = document.getElementById('bal');
-  // Fix #4 — use textContent, not innerHTML, for user-supplied data
   if (ul)  ul.textContent  = profile.username;
   if (bal) bal.textContent = profile.balance;
 }
@@ -147,4 +177,18 @@ function updateBal(n) {
   currentBalance = n;
   const el = document.getElementById('bal');
   if (el) el.textContent = n;
+}
+
+// ── Loading state helper ──────────────────────────────────────
+
+function setButtonLoading(btnId, loading, originalText) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = loading;
+  if (loading) {
+    btn.dataset.originalText = btn.textContent;
+    btn.textContent = 'Loading...';
+  } else {
+    btn.textContent = originalText || btn.dataset.originalText || btn.textContent;
+  }
 }

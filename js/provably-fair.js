@@ -78,6 +78,17 @@ function deriveOutcome(game, hex) {
     const v = parseInt(hex.slice(0, 8), 16);
     return Math.max(1.00, parseFloat((100 / (1 - (v / 0xFFFFFFFF) * 0.99)).toFixed(2)));
   }
+  if (game === 'mines') {
+    // Derive 25 mine positions from successive 2-byte chunks of the HMAC
+    const totalCells = 25;
+    const positions = [];
+    for (let i = 0; i < totalCells; i++) {
+      const chunk = parseInt(hex.slice(i*2, i*2+2), 16);
+      positions.push(chunk % totalCells);
+    }
+    // Deduplicate to get unique mine positions
+    return [...new Set(positions)];
+  }
   return null;
 }
 
@@ -86,19 +97,31 @@ function deriveOutcome(game, hex) {
 function renderPFWidget(containerId, { serverSeedHash, clientSeed, nonce }) {
   const el = document.getElementById(containerId);
   if (!el) return;
+  const shortHash = serverSeedHash && serverSeedHash !== '—'
+    ? `${escapeHtml(serverSeedHash.slice(0,20))}…`
+    : 'Will appear after your bet';
   el.innerHTML = `
     <div class="pf-row">
-      <span class="pf-label">Server Seed Hash</span>
-      <span class="pf-val pf-hash" title="${escapeHtml(serverSeedHash)}">${escapeHtml(serverSeedHash.slice(0,20))}…</span>
+      <span class="pf-label">How this stays fair</span>
+      <span class="pf-val">Your <strong>Client Seed</strong> + your <strong>Nonce</strong> + hidden server seed hash determine results.</span>
     </div>
     <div class="pf-row">
-      <span class="pf-label">Client Seed</span>
+      <span class="pf-label">Server Seed Hash (before bet)</span>
+      <span class="pf-val pf-hash" title="${escapeHtml(serverSeedHash || '—')}">${shortHash}</span>
+    </div>
+    <div class="pf-row">
+      <span class="pf-label">Client Seed (your random key)</span>
       <input class="pf-input" id="pfClientSeedInput" value="${escapeHtml(clientSeed)}" spellcheck="false">
+      <button class="pf-btn" onclick="copyClientSeed()">Copy</button>
       <button class="pf-btn" onclick="rotateSeed()">🔄 New</button>
     </div>
     <div class="pf-row">
-      <span class="pf-label">Nonce</span>
+      <span class="pf-label">Nonce (bet counter)</span>
       <span class="pf-val">${nonce}</span>
+    </div>
+    <div class="pf-row">
+      <span class="pf-label">Tip</span>
+      <span class="pf-val">Rotate your Client Seed any time. Nonce resets to 0 when you rotate.</span>
     </div>`;
 }
 
@@ -113,11 +136,28 @@ function renderPFVerify(containerId, { serverSeed, serverSeedHash, clientSeed, n
     <div id="pfVerifyResult" class="pf-verify-result"></div>`;
 }
 
+function normalizeArray(values) {
+  return Array.isArray(values) ? values.map(Number).filter(Number.isFinite).sort((a,b) => a-b) : [];
+}
+
+function compareDerivedOutcome(game, derived, expected) {
+  if (game === 'mines') {
+    const derivedSet = new Set(normalizeArray(derived));
+    const expectedCells = normalizeArray(expected);
+    if (!expectedCells.length) return false;
+    // Mines stored outcome can be revealed-safe picks (subset) rather than full mine map.
+    return expectedCells.every(cell => !derivedSet.has(cell));
+  }
+  return JSON.stringify(derived) === JSON.stringify(expected);
+}
+
 async function runVerify(params) {
   const derived = await verifyBet(params);
   const el = document.getElementById('pfVerifyResult');
-  const match = JSON.stringify(derived) === JSON.stringify(params.outcome);
-  el.textContent = match ? '✅ Verified — outcome matches seeds' : '❌ Mismatch — outcome does not match seeds';
+  const match = compareDerivedOutcome(params.game, derived, params.outcome);
+  el.textContent = match
+    ? '✅ Verified — outcome is consistent with seeds'
+    : '❌ Mismatch — outcome is not consistent with seeds';
   el.style.color  = match ? 'var(--green)' : 'var(--red)';
 }
 
@@ -126,5 +166,16 @@ async function rotateSeed() {
   if (input) {
     const newSeed = rotateClientSeed();
     input.value = newSeed;
+  }
+}
+
+async function copyClientSeed() {
+  const input = document.getElementById('pfClientSeedInput');
+  if (!input) return;
+  try {
+    await navigator.clipboard.writeText(input.value);
+  } catch (_) {
+    input.select();
+    document.execCommand('copy');
   }
 }
