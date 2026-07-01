@@ -130,9 +130,12 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #7a5c0020 0%, transpa
   <div class="footer-tagline">Play Smart · Win Big · No Regrets</div>
   <div class="footer-links">
     <a href="index.html">🏠 Lobby</a>
+    <a href="coin.html">🪙 Coin</a>
     <a href="dice.html">🎲 Dice</a>
     <a href="slots.html">🎰 Slots</a>
     <a href="crash.html">🚀 Crash</a>
+    <a href="mines.html">💣 Mines</a>
+    <a href="leaderboard.html">🏆 Leaderboard</a>
     <a href="history.html">📋 History</a>
   </div>
   <div class="spray-tag" style="opacity:0.2;margin-bottom:8px">✦ FUCKITT'S FUNHOUSE ✦ EST. 2024 ✦ PLAY AT YOUR OWN RISK ✦</div>
@@ -141,6 +144,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #7a5c0020 0%, transpa
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/shared.js"></script>
+<script src="../js/sounds.js"></script>
 <script src="../js/provably-fair.js"></script>
 <script>
   guardPage().then(() => initNav());
@@ -174,9 +178,11 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #7a5c0020 0%, transpa
     document.getElementById('btnHeads').disabled = false;
     document.getElementById('btnTails').disabled = false;
     if (res.win) {
+      soundWin();
       setResult('🎉 ' + res.outcome.toUpperCase() + ' — YOU WIN $' + amount + '!', 'win');
       spawnParticles('#d4af37');
     } else {
+      soundLose();
       setResult('💀 ' + res.outcome.toUpperCase() + ' — YOU LOSE $' + amount, 'lose');
     }
     addHistory(res.outcome, res.win, amount);

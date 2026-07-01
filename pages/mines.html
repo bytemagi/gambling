@@ -169,6 +169,8 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #00b89420 0%, transpa
     <a href="dice.html">🎲 Dice</a>
     <a href="slots.html">🎰 Slots</a>
     <a href="crash.html">🚀 Crash</a>
+    <a href="mines.html">💣 Mines</a>
+    <a href="leaderboard.html">🏆 Leaderboard</a>
     <a href="history.html">📋 History</a>
   </div>
   <div class="footer-copy">© 2024 Fuckitt's Funhouse · For entertainment purposes only</div>
@@ -176,6 +178,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #00b89420 0%, transpa
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/shared.js"></script>
+<script src="../js/sounds.js"></script>
 <script src="../js/provably-fair.js"></script>
 <script>
   guardPage().then(() => initNav());
@@ -268,7 +271,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #00b89420 0%, transpa
       showAllMines(minePositions, idx);
       updateBal(res.balance);
       document.getElementById('btnCashout').style.display = 'none';
-      setResult('💥 BOOM! Hit a mine — LOSE $' + betAmount, 'lose');
+      soundMineExplode(); setResult('💥 BOOM! Hit a mine — LOSE $' + betAmount, 'lose');
       addHistory(minePositions.length, revealed.length, false, betAmount, res.delta);
       renderPFVerify('pfWidget', { serverSeed: res.serverSeed, serverSeedHash: res.serverSeedHash, clientSeed: res.clientSeed, nonce: res.nonce, game: 'mines', outcome: res.outcome });
       endGame();
@@ -278,7 +281,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #00b89420 0%, transpa
       cell.className = 'mine-cell revealed-safe';
       cell.textContent = '💎';
       updateArena();
-      setResult('✅ Safe! Keep going or cash out · ' + revealed.length + ' revealed', 'win');
+      soundMineReveal(); setResult('✅ Safe! Keep going or cash out · ' + revealed.length + ' revealed', 'win');
     }
   }
 
@@ -300,7 +303,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #00b89420 0%, transpa
 
     const profit = res.delta;
     const mult   = res.multiplier || calcMultiplier(selectedMines, revealed.length);
-    setResult('💰 CASHED OUT ' + mult.toFixed(2) + '× — WIN $' + (betAmount + profit) + '!', 'win');
+    soundWin(); setResult('💰 CASHED OUT ' + mult.toFixed(2) + '× — WIN $' + (betAmount + profit) + '!', 'win');
     addHistory(selectedMines, revealed.length, true, betAmount, profit);
     renderPFVerify('pfWidget', { serverSeed: res.serverSeed, serverSeedHash: res.serverSeedHash, clientSeed: res.clientSeed, nonce: res.nonce, game: 'mines', outcome: res.outcome });
     endGame();

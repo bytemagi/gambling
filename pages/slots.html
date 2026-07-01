@@ -202,7 +202,10 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #4a0a6e20 0%, transpa
     <a href="index.html">🏠 Lobby</a>
     <a href="coin.html">🪙 Coin</a>
     <a href="dice.html">🎲 Dice</a>
+    <a href="slots.html">🎰 Slots</a>
     <a href="crash.html">🚀 Crash</a>
+    <a href="mines.html">💣 Mines</a>
+    <a href="leaderboard.html">🏆 Leaderboard</a>
     <a href="history.html">📋 History</a>
   </div>
   <div class="spray-tag" style="opacity:0.2;margin-bottom:8px">✦ FUCKITT'S FUNHOUSE ✦ EST. 2024 ✦ PLAY AT YOUR OWN RISK ✦</div>
@@ -211,6 +214,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #4a0a6e20 0%, transpa
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/shared.js"></script>
+<script src="../js/sounds.js"></script>
 <script src="../js/provably-fair.js"></script>
 <script>
   guardPage().then(() => initNav());
@@ -218,16 +222,9 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #4a0a6e20 0%, transpa
 
   const SYMBOLS = ['🍒','🍋','🍊','⭐','💎','7️⃣'];
 
-  function setQuickBet(n) {
-    const bal = currentBalance || parseInt(document.getElementById('bal').textContent) || 0;
-    document.getElementById('betAmt').value = Math.min(n, bal) || n;
-  }
+  function setQuickBet(n) { const b=currentBalance||n; document.getElementById('betAmt').value=Math.min(n,b); }
   function halfBet()   { const el=document.getElementById('betAmt'); el.value=Math.max(1,Math.floor(parseInt(el.value||1)/2)); }
-  function doubleBet() {
-    const bal = currentBalance || parseInt(document.getElementById('bal').textContent) || 0;
-    const el  = document.getElementById('betAmt');
-    el.value  = bal ? Math.min(parseInt(el.value||1)*2, bal) : parseInt(el.value||1)*2;
-  }
+  function doubleBet() { const b=currentBalance||99999; const el=document.getElementById('betAmt'); el.value=Math.min(parseInt(el.value||1)*2,b); }
 
   function buildStrip(finalSymbol) {
     const count = 14; let html = '';
@@ -272,17 +269,20 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #4a0a6e20 0%, transpa
       const gain = Math.abs(res.delta);
       const isJackpot = res.delta >= amount * 5;
       if (res.win && isJackpot) {
+        soundJackpot();
         setResult('💎 JACKPOT! YOU WIN $' + gain + '!', 'jackpot-win');
         [1,2,3].forEach(n => document.getElementById('rw'+n).classList.add('jackpot'));
         setTimeout(() => [1,2,3].forEach(n => document.getElementById('rw'+n).classList.remove('jackpot')), 2000);
         spawnParticles(30);
       } else if (res.win) {
+        soundWin();
         setResult('🎉 THREE OF A KIND — YOU WIN $' + gain + '!', 'win');
         spawnParticles(12);
       } else if (res.delta === 0) {
         // Fix #6 — pair is a push (break-even), not a win
         setResult('🤝 TWO OF A KIND — BET RETURNED', 'idle');
       } else {
+        soundLose();
         setResult('💀 NO MATCH — YOU LOSE $' + amount, 'lose');
       }
       addHistory(res.outcome, res.win, isJackpot, amount, gain);

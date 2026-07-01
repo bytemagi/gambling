@@ -82,8 +82,6 @@ async function apiPlaceBet(game, amount, choice) {
   const session = await getSession();
   if (!session) return { ok: false, error: 'Not logged in' };
 
-  if (amount > currentBalance) return { ok: false, error: 'Insufficient balance' };
-
   const clientSeed = getClientSeed();
   const nonce      = incrementNonce();
 
