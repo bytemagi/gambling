@@ -213,15 +213,21 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #4a0a6e20 0%, transpa
 <script src="../js/shared.js"></script>
 <script src="../js/provably-fair.js"></script>
 <script>
-  guardPage();
-  initNav();
+  guardPage().then(() => initNav());
   renderPFWidget('pfWidget', { serverSeedHash: '—', clientSeed: getClientSeed(), nonce: getNonce() });
 
   const SYMBOLS = ['🍒','🍋','🍊','⭐','💎','7️⃣'];
 
-  function setQuickBet(n) { document.getElementById('betAmt').value = Math.min(n, currentBalance); }
+  function setQuickBet(n) {
+    const bal = currentBalance || parseInt(document.getElementById('bal').textContent) || 0;
+    document.getElementById('betAmt').value = Math.min(n, bal) || n;
+  }
   function halfBet()   { const el=document.getElementById('betAmt'); el.value=Math.max(1,Math.floor(parseInt(el.value||1)/2)); }
-  function doubleBet() { const el=document.getElementById('betAmt'); el.value=Math.min(parseInt(el.value||1)*2, currentBalance); }
+  function doubleBet() {
+    const bal = currentBalance || parseInt(document.getElementById('bal').textContent) || 0;
+    const el  = document.getElementById('betAmt');
+    el.value  = bal ? Math.min(parseInt(el.value||1)*2, bal) : parseInt(el.value||1)*2;
+  }
 
   function buildStrip(finalSymbol) {
     const count = 14; let html = '';

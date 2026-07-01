@@ -3,8 +3,8 @@
 // STEP 1: Replace these two values with yours from:
 //         Supabase Dashboard → Settings → API
 // ─────────────────────────────────────────────────────────────
-const SUPABASE_URL    = 'https://YOUR_PROJECT_ID.supabase.co';
-const SUPABASE_ANON   = 'YOUR_ANON_PUBLIC_KEY';
+const SUPABASE_URL    = 'https://lxzpltvuauzkgddjsplb.supabase.co';
+const SUPABASE_ANON   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4enBsdHZ1YXV6a2dkZGpzcGxiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTE0ODYsImV4cCI6MjA5ODQyNzQ4Nn0.RgL6Pw7yT6d06bywn7m7EmewnW5EvmCC0V781H6ys5A';
 // ─────────────────────────────────────────────────────────────
 
 const { createClient } = supabase; // loaded from CDN in each HTML file
