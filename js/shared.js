@@ -82,8 +82,10 @@ async function apiPlaceBet(game, amount, choice) {
   const session = await getSession();
   if (!session) return { ok: false, error: 'Not logged in' };
 
-  // Fix #5 — use in-memory balance, not DOM
   if (amount > currentBalance) return { ok: false, error: 'Insufficient balance' };
+
+  const clientSeed = getClientSeed();
+  const nonce      = incrementNonce();
 
   const res = await fetch(`${SUPABASE_URL}/functions/v1/place-bet`, {
     method: 'POST',
@@ -91,7 +93,7 @@ async function apiPlaceBet(game, amount, choice) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify({ game, amount, choice }),
+    body: JSON.stringify({ game, amount, choice, clientSeed, nonce }),
   });
 
   const data = await res.json();

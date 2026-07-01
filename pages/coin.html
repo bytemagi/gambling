@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coin Flip · Fuckitt's Funhouse</title>
+<link rel="stylesheet" href="../css/shared.css">
+<style>
+/* coin-specific */
+body { background-image:radial-gradient(ellipse at 50% 0%, #7a5c0020 0%, transparent 60%), repeating-linear-gradient(45deg,#ffffff03 0,#ffffff03 1px,transparent 1px,transparent 8px); }
+.game-title-bar h1 { background:linear-gradient(180deg,var(--gold2),var(--gold)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+
+/* ── COIN ARENA ── */
+.coin-arena {
+  display:flex; flex-direction:column; align-items:center;
+  background:radial-gradient(ellipse at center, #1a0e0040 0%, transparent 70%);
+  padding:32px 0 24px; margin-bottom:24px;
+}
+
+.coin-wrap { perspective:600px; width:160px; height:160px; margin-bottom:24px; }
+.coin-3d {
+  width:160px; height:160px; position:relative;
+  transform-style:preserve-3d; transition:transform 0.1s;
+}
+.coin-3d.flipping { animation:coinFlip 1s ease-in-out forwards; }
+.coin-face {
+  position:absolute; inset:0; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:5rem; backface-visibility:hidden;
+  box-shadow:0 0 40px #d4af3760, inset 0 0 20px #00000040;
+}
+.coin-heads {
+  background:radial-gradient(circle at 35% 35%, #f5e27a, #d4af37, #7a5c00);
+  border:4px solid #f5e27a;
+}
+.coin-tails {
+  background:radial-gradient(circle at 35% 35%, #c0c0c0, #888, #444);
+  border:4px solid #ccc;
+  transform:rotateY(180deg);
+}
+@keyframes coinFlip {
+  0%   { transform:rotateY(0); }
+  100% { transform:rotateY(1440deg); }
+}
+
+.coin-shadow {
+  width:120px; height:20px; border-radius:50%;
+  background:radial-gradient(ellipse, #00000080, transparent);
+  margin-top:-10px;
+}
+
+</style>
+</head>
+<body>
+
+<div class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:10px">
+      <a class="btn-back" href="index.html">‹ Lobby</a>
+      <a href="index.html"><img src="../logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse"></a>
+    </div>
+    <div class="header-right">
+      <div class="user-chip"><span class="dot online"></span><span id="userLabel"></span></div>
+      <button class="btn-ghost" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+</div>
+
+<div class="balance-bar">
+  <span class="balance-label">Balance</span>
+  <span class="balance-amount">$<span id="bal">0</span></span>
+</div>
+
+<div class="page">
+  <div class="game-title-bar">
+    <h1>🪙 Coin Flip</h1>
+    <p>Heads or Tails — 50/50 · Double or Nothing</p>
+  </div>
+
+  <div class="coin-arena">
+    <div class="coin-wrap">
+      <div class="coin-3d" id="coin3d">
+        <div class="coin-face coin-heads">👑</div>
+        <div class="coin-face coin-tails">🦅</div>
+      </div>
+    </div>
+    <div class="coin-shadow"></div>
+  </div>
+
+  <div class="odds-row">
+    <div class="odds-box"><div class="odds-label">Win Chance</div><div class="odds-val">50%</div></div>
+    <div class="odds-box"><div class="odds-label">Payout</div><div class="odds-val">2×</div></div>
+    <div class="odds-box"><div class="odds-label">House Edge</div><div class="odds-val">0%</div></div>
+  </div>
+
+  <div class="bet-panel">
+    <div class="bet-panel-title">Place Your Bet</div>
+    <div class="bet-amount-row">
+      <label>Bet $</label>
+      <input class="bet-input" type="number" id="betAmt" value="5" min="1">
+    </div>
+    <div class="quick-bets">
+      <div class="qb" onclick="setQuickBet(5)">$5</div>
+      <div class="qb" onclick="setQuickBet(10)">$10</div>
+      <div class="qb" onclick="setQuickBet(25)">$25</div>
+      <div class="qb" onclick="setQuickBet(50)">$50</div>
+      <div class="qb" onclick="halfBet()">½</div>
+      <div class="qb" onclick="doubleBet()">2×</div>
+    </div>
+    <div class="choice-row">
+      <button class="btn-heads" id="btnHeads" onclick="flip('heads')">👑 Heads</button>
+      <button class="btn-tails" id="btnTails" onclick="flip('tails')">🦅 Tails</button>
+    </div>
+  </div>
+
+  <div class="result-banner idle" id="result">Pick Heads or Tails and place your bet</div>
+
+  <div class="history">
+    <div class="history-title">Recent Flips</div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <div class="pf-widget" id="pfWidget">
+    <div class="pf-title">🔐 Provably Fair</div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-logo-wrap"><img src="../logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse"></div>
+  <div class="footer-tagline">Play Smart · Win Big · No Regrets</div>
+  <div class="footer-links">
+    <a href="index.html">🏠 Lobby</a>
+    <a href="dice.html">🎲 Dice Roll</a>
+    <a href="slots.html">🎰 Slots</a>
+  </div>
+  <div class="spray-tag" style="opacity:0.2;margin-bottom:8px">✦ FUCKITT'S FUNHOUSE ✦ EST. 2024 ✦ PLAY AT YOUR OWN RISK ✦</div>
+  <div class="footer-copy">© 2024 Fuckitt's Funhouse · For entertainment purposes only</div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/shared.js"></script>
+<script src="../js/provably-fair.js"></script>
+<script>
+  guardPage();
+  initNav();
+  renderPFWidget('pfWidget', { serverSeedHash: '—', clientSeed: getClientSeed(), nonce: getNonce() });
+
+  function setQuickBet(n) { document.getElementById('betAmt').value = Math.min(n, currentBalance); }
+  function halfBet()   { const el=document.getElementById('betAmt'); el.value=Math.max(1,Math.floor(parseInt(el.value||1)/2)); }
+  function doubleBet() { const el=document.getElementById('betAmt'); el.value=Math.min(parseInt(el.value||1)*2, currentBalance); }
+
+  async function flip(choice) {
+    const amount = parseInt(document.getElementById('betAmt').value) || 0;
+    if (amount <= 0 || amount > currentBalance) { setResult('Invalid bet amount', 'idle'); return; }
+    document.getElementById('btnHeads').disabled = true;
+    document.getElementById('btnTails').disabled = true;
+    setResult('Flipping...', 'idle');
+
+    const coin = document.getElementById('coin3d');
+    coin.classList.remove('flipping');
+    void coin.offsetWidth;
+    coin.classList.add('flipping');
+
+    // Fix #7 — run API and minimum animation delay in parallel
+    const [res] = await Promise.all([
+      apiPlaceBet('coin', amount, choice),
+      new Promise(r => setTimeout(r, 1050))
+    ]);
+
+    coin.classList.remove('flipping');
+    coin.style.transform = res.outcome === 'tails' ? 'rotateY(180deg)' : 'rotateY(0deg)';
+    updateBal(res.balance);
+    document.getElementById('btnHeads').disabled = false;
+    document.getElementById('btnTails').disabled = false;
+    if (res.win) {
+      setResult('🎉 ' + res.outcome.toUpperCase() + ' — YOU WIN $' + amount + '!', 'win');
+      spawnParticles('#d4af37');
+    } else {
+      setResult('💀 ' + res.outcome.toUpperCase() + ' — YOU LOSE $' + amount, 'lose');
+    }
+    addHistory(res.outcome, res.win, amount);
+    renderPFVerify('pfWidget', { serverSeed: res.serverSeed, serverSeedHash: res.serverSeedHash, clientSeed: res.clientSeed, nonce: res.nonce, game: 'coin', outcome: res.outcome });
+  }
+
+  function setResult(msg, cls) {
+    const el = document.getElementById('result');
+    el.textContent = msg;
+    el.className = 'result-banner ' + cls;
+  }
+
+  function addHistory(outcome, win, amount) {
+    const list = document.getElementById('historyList');
+    const item = document.createElement('div');
+    item.className = 'history-item ' + (win ? 'win' : 'lose');
+    item.innerHTML = `<span>${outcome === 'heads' ? '👑 Heads' : '🦅 Tails'}</span><span class="h-amt">${win ? '+' : '−'}$${amount}</span>`;
+    list.prepend(item);
+    if (list.children.length > 8) list.lastChild.remove();
+  }
+
+  function spawnParticles(color) {
+    const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+    for (let i = 0; i < 30; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = 6 + Math.random() * 8;
+      const angle = Math.random() * Math.PI * 2;
+      const dist  = 80 + Math.random() * 160;
+      p.style.cssText = `width:${size}px;height:${size}px;background:${color};left:${cx}px;top:${cy}px;
+        --tx:${Math.cos(angle)*dist}px;--ty:${Math.sin(angle)*dist}px;`;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 900);
+    }
+  }
+</script>
+</body>
+</html>

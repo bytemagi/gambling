@@ -28,14 +28,18 @@ create trigger on_auth_user_created
 
 -- ── Bets table ────────────────────────────────────────────────
 create table if not exists public.bets (
-  id         bigserial primary key,
-  user_id    uuid references public.profiles(id) on delete cascade not null,
-  username   text not null,
-  game       text not null,           -- 'coin' | 'dice' | 'slots'
-  amount     integer not null,
-  outcome    jsonb not null,          -- { result, win, delta }
-  balance_after integer not null,
-  created_at timestamptz default now()
+  id               bigserial primary key,
+  user_id          uuid references public.profiles(id) on delete cascade not null,
+  username         text not null,
+  game             text not null,           -- 'coin' | 'dice' | 'slots'
+  amount           integer not null,
+  outcome          jsonb not null,          -- { result, win, delta }
+  balance_after    integer not null,
+  server_seed      text not null,           -- revealed after bet for verification
+  server_seed_hash text not null,           -- shown before bet so player can verify later
+  client_seed      text not null,
+  nonce            integer not null,
+  created_at       timestamptz default now()
 );
 
 -- ── Row Level Security ────────────────────────────────────────

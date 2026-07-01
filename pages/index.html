@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fuckitt's Funhouse</title>
-<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="../css/shared.css">
 <style>
 /* ── LOGIN ── */
 #loginScreen {
@@ -87,7 +87,7 @@
 <!-- ══ LOGIN ══ -->
 <div id="loginScreen">
   <div class="login-logo-wrap">
-    <img src="logo.svg" class="graffiti-logo" alt="Fuckitt's Funhouse">
+    <img src="../logo.svg" class="graffiti-logo" alt="Fuckitt's Funhouse">
   </div>
   <div class="login-sub">Est. 2024 · Play at Your Own Risk</div>
   <div class="login-divider"></div>
@@ -106,7 +106,7 @@
   <div class="site-header">
     <div class="header-inner">
       <a class="header-logo-wrap" href="index.html">
-        <img src="logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse">
+        <img src="../logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse">
       </a>
       <div class="header-right">
         <div class="user-chip">
@@ -177,13 +177,14 @@
 
   <footer class="site-footer">
     <div class="footer-logo-wrap">
-      <img src="logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse">
+      <img src="../logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse">
     </div>
     <div class="footer-tagline">Play Smart · Win Big · No Regrets</div>
     <div class="footer-links">
       <a href="coin.html">🪙 Coin Flip</a>
       <a href="dice.html">🎲 Dice Roll</a>
       <a href="slots.html">🎰 Slots</a>
+      <a href="history.html">📋 History</a>
     </div>
     <div class="spray-tag" style="opacity:0.2;margin-bottom:8px">✦ FUCKITT'S FUNHOUSE ✦ EST. 2024 ✦ PLAY AT YOUR OWN RISK ✦</div>
     <div class="footer-copy">© 2024 Fuckitt's Funhouse · For entertainment purposes only</div>
@@ -192,7 +193,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="shared.js"></script>
+<script src="../js/shared.js"></script>
 <script>
   // Check session on load
   isLoggedIn().then(loggedIn => { if (loggedIn) showLobby(); });

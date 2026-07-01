@@ -4,48 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dice Roll · Fuckitt's Funhouse</title>
-<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="../css/shared.css">
 <style>
-:root {
-  --gold:#d4af37; --gold2:#f5e27a; --red:#c0392b; --green:#27ae60;
-  --dark:#080f14; --card-bg:#0e1e2c; --border:#1e3a50; --text:#e8dcc8; --muted:#7a8fa6;
-  --blue:#1a3a6e; --blue2:#4a90e2;
-}
-* { box-sizing:border-box; margin:0; padding:0; }
-body {
-  background:var(--dark); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh;
-  background-image:radial-gradient(ellipse at 50% 0%, #1a3a6e20 0%, transparent 60%),
-    repeating-linear-gradient(45deg,#ffffff03 0,#ffffff03 1px,transparent 1px,transparent 8px);
-}
-
-.site-header { background:linear-gradient(180deg,#060e1a,#060e16); border-bottom:1px solid #4a90e230;
-  padding:14px 20px; position:sticky; top:0; z-index:100; box-shadow:0 4px 20px #000a; }
-.header-inner { display:flex; justify-content:space-between; align-items:center; max-width:600px; margin:0 auto; }
-.header-logo { font-family:'Cinzel',serif; font-size:1.1rem; font-weight:900;
-  background:linear-gradient(180deg,#7ab8f5,var(--blue2));
-  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-.header-right { display:flex; align-items:center; gap:10px; }
-.user-chip { background:#112233; border:1px solid var(--border); border-radius:20px;
-  padding:4px 12px; font-size:0.8rem; color:var(--muted); display:flex; align-items:center; gap:6px; }
-.dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); }
-.btn-ghost { background:transparent; border:1px solid var(--gold); color:var(--gold);
-  padding:6px 14px; border-radius:6px; font-size:0.8rem; cursor:pointer; }
-.btn-back { background:transparent; border:1px solid var(--border); color:var(--muted);
-  padding:6px 14px; border-radius:6px; font-size:0.8rem; cursor:pointer; text-decoration:none;
-  display:inline-flex; align-items:center; gap:4px; }
-.balance-bar { background:linear-gradient(90deg,#060e1a,#0e1e2c,#060e1a);
-  border-bottom:1px solid var(--border); padding:10px 20px;
-  display:flex; justify-content:center; align-items:center; gap:8px; }
-.balance-label { color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:2px; }
-.balance-amount { font-family:'Cinzel',serif; font-size:1.4rem; font-weight:700; color:var(--gold); text-shadow:0 0 20px #d4af3760; }
-
-.page { max-width:480px; margin:0 auto; padding:24px 16px 48px; }
-
-.game-title-bar { text-align:center; margin-bottom:32px; }
-.game-title-bar h1 { font-family:'Cinzel',serif; font-size:2rem; font-weight:900;
-  background:linear-gradient(180deg,#7ab8f5,var(--blue2));
-  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-.game-title-bar p { color:var(--muted); font-size:0.82rem; margin-top:6px; letter-spacing:1px; }
+:root { --blue:#1a3a6e; --blue2:#4a90e2; }
+body { background-image:radial-gradient(ellipse at 50% 0%, #1a3a6e20 0%, transparent 60%), repeating-linear-gradient(45deg,#ffffff03 0,#ffffff03 1px,transparent 1px,transparent 8px); }
+.game-title-bar h1 { background:linear-gradient(180deg,#7ab8f5,var(--blue2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.odds-box .odds-val { color:var(--blue2); }
 
 /* ── DICE ARENA ── */
 .dice-arena {
@@ -107,59 +71,6 @@ body {
 .guess-btn:hover  { border-color:var(--blue2); color:var(--blue2); }
 .guess-btn.active { border-color:var(--blue2); background:#1a3a6e; color:#fff; box-shadow:0 0 12px #4a90e240; }
 
-/* ── ODDS ── */
-.odds-row { display:flex; gap:12px; margin-bottom:24px; }
-.odds-box { flex:1; background:var(--card-bg); border:1px solid var(--border); border-radius:12px; padding:12px; text-align:center; }
-.odds-box .odds-label { color:var(--muted); font-size:0.7rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
-.odds-box .odds-val { font-family:'Cinzel',serif; font-size:1.1rem; color:var(--blue2); }
-
-/* ── BET PANEL ── */
-.bet-panel { background:var(--card-bg); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:16px; }
-.bet-panel-title { font-family:'Cinzel',serif; font-size:0.8rem; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:14px; }
-.bet-amount-row { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
-.bet-amount-row label { color:var(--muted); font-size:0.85rem; white-space:nowrap; }
-.bet-input { flex:1; padding:12px; border-radius:8px; border:1px solid var(--border);
-  background:#060e16; color:var(--gold); font-family:'Cinzel',serif; font-size:1.2rem;
-  text-align:center; outline:none; transition:border-color 0.2s; }
-.bet-input:focus { border-color:var(--gold); }
-.quick-bets { display:flex; gap:8px; margin-bottom:16px; }
-.qb { flex:1; padding:8px 4px; background:#060e16; border:1px solid var(--border);
-  border-radius:8px; color:var(--muted); font-size:0.8rem; cursor:pointer; text-align:center; transition:all 0.15s; }
-.qb:hover { border-color:var(--gold); color:var(--gold); }
-
-.btn-roll {
-  width:100%; padding:16px; border:none; border-radius:10px; cursor:pointer;
-  font-family:'Cinzel',serif; font-size:1.1rem; font-weight:700; letter-spacing:2px;
-  background:linear-gradient(180deg,#7ab8f5,var(--blue2),#1a3a6e);
-  color:#fff; box-shadow:0 4px 20px #4a90e240;
-  transition:filter 0.15s, transform 0.1s;
-}
-.btn-roll:hover { filter:brightness(1.1); }
-.btn-roll:active { transform:scale(0.98); }
-.btn-roll:disabled { opacity:0.4; cursor:not-allowed; }
-
-.result-banner { border-radius:12px; padding:16px; text-align:center; margin-bottom:16px;
-  font-family:'Cinzel',serif; font-size:1.1rem; font-weight:700; letter-spacing:1px;
-  min-height:56px; display:flex; align-items:center; justify-content:center; transition:all 0.3s; }
-.result-banner.idle { background:#060e1680; border:1px solid var(--border); color:var(--muted); font-family:'Inter',sans-serif; font-size:0.85rem; }
-.result-banner.win  { background:#27ae6020; border:1px solid #27ae6060; color:#2ecc71; box-shadow:0 0 30px #27ae6030; }
-.result-banner.lose { background:#c0392b20; border:1px solid #c0392b60; color:#e74c3c; box-shadow:0 0 30px #c0392b30; }
-
-.history { background:var(--card-bg); border:1px solid var(--border); border-radius:16px; padding:16px; }
-.history-title { font-family:'Cinzel',serif; font-size:0.8rem; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; }
-.history-list { display:flex; flex-direction:column; gap:6px; max-height:180px; overflow-y:auto; }
-.history-item { display:flex; justify-content:space-between; align-items:center;
-  background:#060e16; border-radius:8px; padding:8px 12px; font-size:0.85rem;
-  border-left:3px solid var(--border); animation:fadeIn 0.3s; }
-.history-item.win  { border-left-color:var(--green); }
-.history-item.lose { border-left-color:var(--red); }
-.h-amt { font-family:'Cinzel',serif; }
-.history-item.win  .h-amt { color:var(--green); }
-.history-item.lose .h-amt { color:var(--red); }
-@keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:none} }
-
-.particle { position:fixed; pointer-events:none; border-radius:50%; z-index:999; animation:burst 0.8s ease-out forwards; }
-@keyframes burst { 0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0} }
 </style>
 </head>
 <body>
@@ -168,7 +79,7 @@ body {
   <div class="header-inner">
     <div style="display:flex;align-items:center;gap:10px">
       <a class="btn-back" href="index.html">‹ Lobby</a>
-      <a href="index.html"><img src="logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse"></a>
+      <a href="index.html"><img src="../logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse"></a>
     </div>
     <div class="header-right">
       <div class="user-chip"><span class="dot online"></span><span id="userLabel"></span></div>
@@ -269,10 +180,14 @@ body {
     <div class="history-title">Recent Rolls</div>
     <div class="history-list" id="historyList"></div>
   </div>
+
+  <div class="pf-widget" id="pfWidget">
+    <div class="pf-title">🔐 Provably Fair</div>
+  </div>
 </div>
 
 <footer class="site-footer">
-  <div class="footer-logo-wrap"><img src="logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse"></div>
+  <div class="footer-logo-wrap"><img src="../logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse"></div>
   <div class="footer-tagline">Play Smart · Win Big · No Regrets</div>
   <div class="footer-links">
     <a href="index.html">🏠 Lobby</a>
@@ -284,10 +199,12 @@ body {
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="shared.js"></script>
+<script src="../js/shared.js"></script>
+<script src="../js/provably-fair.js"></script>
 <script>
   guardPage();
   initNav();
+  renderPFWidget('pfWidget', { serverSeedHash: '—', clientSeed: getClientSeed(), nonce: getNonce() });
 
   let selectedGuess = 1;
 
@@ -343,6 +260,7 @@ body {
       setResult('💀 ROLLED ' + res.outcome + ' — YOU LOSE $' + amount, 'lose');
     }
     addHistory(res.outcome, selectedGuess, res.win, amount);
+    renderPFVerify('pfWidget', { serverSeed: res.serverSeed, serverSeedHash: res.serverSeedHash, clientSeed: res.clientSeed, nonce: res.nonce, game: 'dice', outcome: res.outcome });
   }
 
   function setResult(msg, cls) {
