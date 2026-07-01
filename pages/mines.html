@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mines · Fuckitt's Funhouse</title>
+<link rel="stylesheet" href="../css/shared.css">
+<style>
+:root { --teal:#00b894; --teal2:#55efc4; }
+body { background-image:radial-gradient(ellipse at 50% 0%, #00b89420 0%, transparent 60%), repeating-linear-gradient(45deg,#ffffff03 0,#ffffff03 1px,transparent 1px,transparent 8px); }
+.game-title-bar h1 { background:linear-gradient(180deg,var(--teal2),var(--teal)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+
+/* ── MINE SELECTOR ── */
+.mine-selector { display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+.mine-selector label { color:var(--muted); font-size:0.85rem; }
+.mine-btns { display:flex; gap:6px; }
+.mine-btn {
+  width:40px; height:40px; border-radius:8px; border:2px solid var(--border);
+  background:#060e16; color:var(--text); font-family:'Cinzel',serif; font-size:0.9rem;
+  cursor:pointer; transition:all 0.15s;
+}
+.mine-btn:hover  { border-color:var(--red); color:var(--red); }
+.mine-btn.active { border-color:var(--red); background:#c0392b20; color:#e74c3c; }
+
+/* ── GRID ── */
+.mines-arena {
+  background:linear-gradient(180deg,#0a0a14,#060e16);
+  border:1px solid var(--border); border-radius:20px;
+  padding:16px; margin-bottom:20px;
+}
+
+.mines-grid {
+  display:grid; grid-template-columns:repeat(5,1fr); gap:8px;
+}
+
+.mine-cell {
+  aspect-ratio:1; border-radius:10px; border:2px solid var(--border);
+  background:linear-gradient(180deg,#1a2a3a,#0e1e2c);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.6rem; cursor:pointer;
+  transition:all 0.15s; position:relative; overflow:hidden;
+  box-shadow:0 2px 8px #0006;
+}
+.mine-cell:hover:not(.revealed):not(.disabled) {
+  border-color:var(--teal); transform:scale(1.05);
+  box-shadow:0 0 12px #00b89430;
+}
+.mine-cell.revealed-safe {
+  background:linear-gradient(180deg,#0a2a1a,#061a10);
+  border-color:var(--teal); cursor:default;
+  box-shadow:0 0 10px #00b89430;
+}
+.mine-cell.revealed-mine {
+  background:linear-gradient(180deg,#2a0a0a,#1a0606);
+  border-color:var(--red); cursor:default;
+  animation:mineFlash 0.3s ease;
+}
+.mine-cell.show-mine {
+  background:linear-gradient(180deg,#1a0a0a,#0e0606);
+  border-color:#c0392b50; cursor:default; opacity:0.7;
+}
+.mine-cell.disabled { cursor:default; }
+@keyframes mineFlash { 0%,100%{background:linear-gradient(180deg,#2a0a0a,#1a0606)} 50%{background:#c0392b40} }
+
+/* multiplier display inside arena */
+.arena-top {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:12px; font-size:0.8rem;
+}
+.arena-mult { font-family:'Cinzel',serif; font-size:1.1rem; color:var(--teal2); }
+.arena-safe { color:var(--muted); }
+
+/* cashout button */
+.btn-cashout-mines {
+  width:100%; padding:16px; border:none; border-radius:10px; cursor:pointer;
+  font-family:'Cinzel',serif; font-size:1rem; font-weight:700; letter-spacing:2px;
+  background:linear-gradient(180deg,var(--teal2),var(--teal),#007a5a);
+  color:#001a10; box-shadow:0 4px 20px #00b89440;
+  transition:filter 0.15s, transform 0.1s; margin-bottom:16px;
+}
+.btn-cashout-mines:hover   { filter:brightness(1.1); }
+.btn-cashout-mines:active  { transform:scale(0.98); }
+.btn-cashout-mines:disabled { opacity:0.4; cursor:not-allowed; }
+</style>
+</head>
+<body>
+
+<div class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:10px">
+      <a class="btn-back" href="index.html">‹ Lobby</a>
+      <a href="index.html"><img src="../logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse"></a>
+    </div>
+    <div class="header-right">
+      <div class="user-chip"><span class="dot online" id="statusDot"></span><span id="userLabel"></span></div>
+      <button class="btn-ghost" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+</div>
+
+<div class="balance-bar">
+  <span class="balance-label">Balance</span>
+  <span class="balance-amount">$<span id="bal">0</span></span>
+</div>
+
+<div class="page">
+  <div class="game-title-bar">
+    <h1>💣 Mines</h1>
+    <p>Reveal safe cells · Cash out before you hit a mine</p>
+  </div>
+
+  <div class="bet-panel">
+    <div class="bet-panel-title">Setup</div>
+    <div class="bet-amount-row">
+      <label>Bet $</label>
+      <input class="bet-input" type="number" id="betAmt" value="5" min="1">
+    </div>
+    <div class="quick-bets">
+      <div class="qb" onclick="setQuickBet(5)">$5</div>
+      <div class="qb" onclick="setQuickBet(10)">$10</div>
+      <div class="qb" onclick="setQuickBet(25)">$25</div>
+      <div class="qb" onclick="setQuickBet(50)">$50</div>
+      <div class="qb" onclick="halfBet()">½</div>
+      <div class="qb" onclick="doubleBet()">2×</div>
+    </div>
+    <div class="mine-selector">
+      <label>💣 Mines:</label>
+      <div class="mine-btns">
+        <button class="mine-btn" onclick="setMines(1)">1</button>
+        <button class="mine-btn active" onclick="setMines(3)">3</button>
+        <button class="mine-btn" onclick="setMines(5)">5</button>
+        <button class="mine-btn" onclick="setMines(10)">10</button>
+        <button class="mine-btn" onclick="setMines(15)">15</button>
+      </div>
+    </div>
+    <button class="btn-gold" id="btnStart" onclick="startGame()">💣 Start Game</button>
+  </div>
+
+  <div class="mines-arena" id="minesArena" style="display:none">
+    <div class="arena-top">
+      <span class="arena-safe">Safe: <strong id="safeCount">0</strong> · Mines: <strong id="mineCount">3</strong></span>
+      <span class="arena-mult">Next: <strong id="nextMult">—</strong>×</span>
+    </div>
+    <div class="mines-grid" id="minesGrid"></div>
+  </div>
+
+  <button class="btn-cashout-mines" id="btnCashout" style="display:none" onclick="cashout()">
+    💰 Cash Out — <span id="cashoutAmt">$0</span>
+  </button>
+
+  <div class="result-banner idle" id="result">Set your mines count and start</div>
+
+  <div class="history">
+    <div class="history-title">Recent Games</div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <div class="pf-widget" id="pfWidget">
+    <div class="pf-title">🔐 Provably Fair</div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-logo-wrap"><img src="../logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse"></div>
+  <div class="footer-tagline">Play Smart · Win Big · No Regrets</div>
+  <div class="footer-links">
+    <a href="index.html">🏠 Lobby</a>
+    <a href="coin.html">🪙 Coin</a>
+    <a href="dice.html">🎲 Dice</a>
+    <a href="slots.html">🎰 Slots</a>
+    <a href="crash.html">🚀 Crash</a>
+    <a href="history.html">📋 History</a>
+  </div>
+  <div class="footer-copy">© 2024 Fuckitt's Funhouse · For entertainment purposes only</div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/shared.js"></script>
+<script src="../js/provably-fair.js"></script>
+<script>
+  guardPage().then(() => initNav());
+  renderPFWidget('pfWidget', { serverSeedHash: '—', clientSeed: getClientSeed(), nonce: getNonce() });
+
+  let selectedMines = 3;
+  let gameActive    = false;
+  let revealed      = [];   // cell indices revealed so far
+  let minePositions = [];   // revealed after cashout/hit
+  let betAmount     = 0;
+
+  function setQuickBet(n) { const b=currentBalance||n; document.getElementById('betAmt').value=Math.min(n,b); }
+  function halfBet()   { const el=document.getElementById('betAmt'); el.value=Math.max(1,Math.floor(parseInt(el.value||1)/2)); }
+  function doubleBet() { const b=currentBalance||99999; const el=document.getElementById('betAmt'); el.value=Math.min(parseInt(el.value||1)*2,b); }
+
+  function setMines(n) {
+    selectedMines = n;
+    document.querySelectorAll('.mine-btn').forEach(b => b.classList.toggle('active', parseInt(b.textContent) === n));
+  }
+
+  function calcMultiplier(mineCount, safeRevealed) {
+    if (safeRevealed === 0) return 0;
+    return parseFloat((Math.pow(25 / (25 - mineCount), safeRevealed) * 0.97).toFixed(2));
+  }
+
+  function updateArena() {
+    const mult     = calcMultiplier(selectedMines, revealed.length);
+    const nextMult = calcMultiplier(selectedMines, revealed.length + 1);
+    document.getElementById('safeCount').textContent = revealed.length;
+    document.getElementById('nextMult').textContent  = nextMult.toFixed(2);
+    const payout = Math.floor(betAmount * mult);
+    document.getElementById('cashoutAmt').textContent = '$' + payout;
+  }
+
+  function buildGrid(disabled) {
+    const grid = document.getElementById('minesGrid');
+    grid.innerHTML = '';
+    for (let i = 0; i < 25; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'mine-cell' + (disabled ? ' disabled' : '');
+      cell.dataset.idx = i;
+      cell.textContent = '💎';
+      if (!disabled) cell.onclick = () => revealCell(i);
+      grid.appendChild(cell);
+    }
+  }
+
+  async function startGame() {
+    betAmount = parseInt(document.getElementById('betAmt').value) || 0;
+    if (betAmount <= 0 || betAmount > currentBalance) { setResult('Invalid bet amount', 'idle'); return; }
+
+    gameActive    = true;
+    revealed      = [];
+    minePositions = [];
+
+    document.getElementById('btnStart').disabled   = true;
+    document.getElementById('minesArena').style.display = 'block';
+    document.getElementById('btnCashout').style.display = 'block';
+    document.querySelectorAll('.mine-btn').forEach(b => b.disabled = true);
+    document.getElementById('betAmt').disabled = true;
+    document.getElementById('mineCount').textContent = selectedMines;
+
+    buildGrid(false);
+    updateArena();
+    setResult('Reveal safe cells — cash out any time!', 'idle');
+  }
+
+  async function revealCell(idx) {
+    if (!gameActive || revealed.includes(idx)) return;
+
+    // Temporarily reveal as pending
+    const cell = document.querySelector(`.mine-cell[data-idx="${idx}"]`);
+    cell.style.opacity = '0.5';
+
+    // Send to server with current revealed list + this new cell
+    const newRevealed = [...revealed, idx];
+    const res = await apiPlaceBet('mines', betAmount, { mineCount: selectedMines, revealed: newRevealed });
+
+    cell.style.opacity = '1';
+
+    if (!res.ok) { setResult('Error: ' + res.error, 'idle'); return; }
+
+    minePositions = res.outcome;
+
+    if (!res.win && res.delta === -betAmount) {
+      // Hit a mine
+      gameActive = false;
+      cell.className = 'mine-cell revealed-mine';
+      cell.textContent = '💣';
+      showAllMines(minePositions, idx);
+      updateBal(res.balance);
+      document.getElementById('btnCashout').style.display = 'none';
+      setResult('💥 BOOM! Hit a mine — LOSE $' + betAmount, 'lose');
+      addHistory(minePositions.length, revealed.length, false, betAmount, res.delta);
+      renderPFVerify('pfWidget', { serverSeed: res.serverSeed, serverSeedHash: res.serverSeedHash, clientSeed: res.clientSeed, nonce: res.nonce, game: 'mines', outcome: res.outcome });
+      endGame();
+    } else {
+      // Safe cell
+      revealed = newRevealed;
+      cell.className = 'mine-cell revealed-safe';
+      cell.textContent = '💎';
+      updateArena();
+      setResult('✅ Safe! Keep going or cash out · ' + revealed.length + ' revealed', 'win');
+    }
+  }
+
+  async function cashout() {
+    if (!gameActive || revealed.length === 0) {
+      setResult('Reveal at least one cell before cashing out', 'idle');
+      return;
+    }
+
+    gameActive = false;
+    document.getElementById('btnCashout').disabled = true;
+
+    const res = await apiPlaceBet('mines', betAmount, { mineCount: selectedMines, revealed });
+
+    minePositions = res.outcome;
+    showAllMines(minePositions, -1);
+    updateBal(res.balance);
+    document.getElementById('btnCashout').style.display = 'none';
+
+    const profit = res.delta;
+    const mult   = res.multiplier || calcMultiplier(selectedMines, revealed.length);
+    setResult('💰 CASHED OUT ' + mult.toFixed(2) + '× — WIN $' + (betAmount + profit) + '!', 'win');
+    addHistory(selectedMines, revealed.length, true, betAmount, profit);
+    renderPFVerify('pfWidget', { serverSeed: res.serverSeed, serverSeedHash: res.serverSeedHash, clientSeed: res.clientSeed, nonce: res.nonce, game: 'mines', outcome: res.outcome });
+    endGame();
+  }
+
+  function showAllMines(mines, hitIdx) {
+    document.querySelectorAll('.mine-cell').forEach(cell => {
+      const i = parseInt(cell.dataset.idx);
+      if (mines.includes(i) && i !== hitIdx) {
+        cell.className = 'mine-cell show-mine';
+        cell.textContent = '💣';
+      }
+      cell.onclick = null;
+    });
+  }
+
+  function endGame() {
+    document.getElementById('btnStart').disabled = false;
+    document.querySelectorAll('.mine-btn').forEach(b => b.disabled = false);
+    document.getElementById('betAmt').disabled = false;
+    // Disable all remaining cells
+    document.querySelectorAll('.mine-cell').forEach(c => { c.classList.add('disabled'); c.onclick = null; });
+  }
+
+  function setResult(msg, cls) {
+    const el = document.getElementById('result');
+    el.textContent = msg;
+    el.className = 'result-banner ' + cls;
+  }
+
+  function addHistory(mines, safe, win, bet, delta) {
+    const list = document.getElementById('historyList');
+    const item = document.createElement('div');
+    item.className = 'history-item ' + (win ? 'win' : 'lose');
+    item.innerHTML = `<span>💣${mines} mines · ${safe} safe</span><span class="h-amt">${win?'+':'−'}$${Math.abs(delta)||bet}</span>`;
+    list.prepend(item);
+    if (list.children.length > 8) list.lastChild.remove();
+  }
+</script>
+</body>
+</html>

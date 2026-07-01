@@ -50,6 +50,19 @@ function deriveOutcome(game: string, hex: string, amount: number) {
     const crashPoint = Math.max(1.00, parseFloat(((100 / (1 - (v / 0xFFFFFFFF) * 0.99))).toFixed(2)));
     return { outcome: crashPoint, win: false, delta: 0 }; // win/delta set by applyChoice
   }
+  if (game === 'mines') {
+    // Derive 25 mine positions from successive 2-byte chunks of the HMAC
+    // choice = { mines: number, revealed: number[] } — cells player revealed before cashing out
+    const totalCells = 25;
+    const positions: number[] = [];
+    for (let i = 0; i < totalCells; i++) {
+      const chunk = parseInt(hex.slice(i*2, i*2+2), 16);
+      positions.push(chunk % totalCells);
+    }
+    // Deduplicate to get unique mine positions
+    const mineSet = [...new Set(positions)];
+    return { outcome: mineSet, win: false, delta: 0 };
+  }
   throw new Error(`Unknown game: ${game}`);
 }
 
@@ -70,6 +83,17 @@ function applyChoice(game: string, derived: ReturnType<typeof deriveOutcome>, ch
     const delta      = win ? Math.floor(amount * cashoutAt) - amount : -amount;
     return { ...derived, outcome: crashPoint, win, delta, cashoutAt };
   }
+  if (game === 'mines') {
+    const { mineCount, revealed } = choice as { mineCount: number; revealed: number[] };
+    const mines = (derived.outcome as number[]).slice(0, mineCount);
+    const hitMine = revealed.some((cell: number) => mines.includes(cell));
+    if (hitMine) return { ...derived, outcome: mines, win: false, delta: -amount };
+    const multiplier = revealed.length > 0
+      ? parseFloat((Math.pow(25 / (25 - mineCount), revealed.length) * 0.97).toFixed(2))
+      : 0;
+    const delta = revealed.length > 0 ? Math.floor(amount * multiplier) - amount : -amount;
+    return { ...derived, outcome: mines, win: delta > 0, delta, multiplier };
+  }
   return derived;
 }
 
@@ -89,7 +113,7 @@ Deno.serve(async (req) => {
 
   const { game, amount, choice, clientSeed, nonce } = await req.json();
 
-  if (!['coin','dice','slots','crash'].includes(game))
+  if (!['coin','dice','slots','crash','mines'].includes(game))
     return new Response(JSON.stringify({ error: 'Invalid game' }), { status: 400 });
   if (!Number.isInteger(amount) || amount <= 0 || amount > 100000)
     return new Response(JSON.stringify({ error: 'Invalid amount' }), { status: 400 });

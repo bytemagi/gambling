@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leaderboard · Fuckitt's Funhouse</title>
+<link rel="stylesheet" href="../css/shared.css">
+<style>
+.page { max-width:600px; margin:0 auto; padding:24px 16px 48px; }
+.page-title { font-family:'Cinzel',serif; font-size:1.6rem; font-weight:900; color:var(--gold); margin-bottom:4px; }
+.page-sub   { color:var(--muted); font-size:0.82rem; letter-spacing:1px; margin-bottom:24px; }
+
+.tabs { display:flex; gap:8px; margin-bottom:20px; }
+.tab {
+  flex:1; padding:10px; border-radius:10px; border:1px solid var(--border);
+  background:transparent; color:var(--muted); font-family:'Cinzel',serif;
+  font-size:0.78rem; letter-spacing:1px; cursor:pointer; text-align:center;
+  transition:all 0.15s;
+}
+.tab.active { border-color:var(--gold); color:var(--gold); background:#d4af3715; }
+
+.lb-list { display:flex; flex-direction:column; gap:8px; }
+
+.lb-row {
+  background:var(--card-bg); border:1px solid var(--border); border-radius:12px;
+  padding:14px 16px; display:flex; align-items:center; gap:14px;
+  animation:fadeIn 0.2s ease;
+}
+.lb-row.top1 { border-color:#d4af37; background:linear-gradient(90deg,#d4af3710,var(--card-bg)); }
+.lb-row.top2 { border-color:#aaa; background:linear-gradient(90deg,#aaaaaa10,var(--card-bg)); }
+.lb-row.top3 { border-color:#cd7f32; background:linear-gradient(90deg,#cd7f3210,var(--card-bg)); }
+.lb-row.me   { border-color:var(--cyan); }
+
+.lb-rank { font-family:'Cinzel',serif; font-size:1.1rem; min-width:32px; text-align:center; }
+.lb-row.top1 .lb-rank { color:var(--gold); }
+.lb-row.top2 .lb-rank { color:#ccc; }
+.lb-row.top3 .lb-rank { color:#cd7f32; }
+
+.lb-name  { flex:1; font-size:0.9rem; color:var(--text); }
+.lb-name.me-label { color:var(--cyan); }
+.lb-sub   { color:var(--muted); font-size:0.72rem; margin-top:2px; }
+.lb-val   { font-family:'Cinzel',serif; font-size:1rem; color:var(--gold); text-align:right; }
+.lb-val.green { color:var(--green); }
+
+.empty   { text-align:center; padding:48px 0; color:var(--muted); font-size:0.9rem; }
+.skeleton { background:var(--card-bg); border-radius:12px; height:60px; animation:pulse 1.2s ease-in-out infinite; margin-bottom:8px; }
+@keyframes pulse  { 0%,100%{opacity:0.4} 50%{opacity:0.8} }
+@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+
+.my-rank-bar {
+  background:var(--card-bg); border:1px solid var(--cyan); border-radius:12px;
+  padding:12px 16px; margin-bottom:20px; display:flex; justify-content:space-between;
+  align-items:center; font-size:0.85rem;
+}
+.my-rank-bar span { color:var(--cyan); font-family:'Cinzel',serif; }
+</style>
+</head>
+<body>
+
+<div class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:10px">
+      <a class="btn-back" href="index.html">‹ Lobby</a>
+      <a href="index.html"><img src="../logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse"></a>
+    </div>
+    <div class="header-right">
+      <div class="user-chip"><span class="dot online" id="statusDot"></span><span id="userLabel"></span></div>
+      <button class="btn-ghost" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+</div>
+
+<div class="balance-bar">
+  <span class="balance-label">Balance</span>
+  <span class="balance-amount">$<span id="bal">0</span></span>
+</div>
+
+<div class="page">
+  <div class="page-title">🏆 Leaderboard</div>
+  <div class="page-sub">All-time rankings across all players</div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="setTab('profit', this)">💰 Most Profit</button>
+    <button class="tab" onclick="setTab('wagered', this)">🎲 Most Wagered</button>
+    <button class="tab" onclick="setTab('bigwin', this)">⭐ Biggest Win</button>
+  </div>
+
+  <div id="myRankBar" class="my-rank-bar" style="display:none">
+    Your rank: <span id="myRank">—</span>
+  </div>
+
+  <div class="lb-list" id="lbList">
+    <div class="skeleton"></div>
+    <div class="skeleton"></div>
+    <div class="skeleton"></div>
+    <div class="skeleton"></div>
+    <div class="skeleton"></div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-logo-wrap"><img src="../logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse"></div>
+  <div class="footer-tagline">Play Smart · Win Big · No Regrets</div>
+  <div class="footer-links">
+    <a href="index.html">🏠 Lobby</a>
+    <a href="coin.html">🪙 Coin</a>
+    <a href="dice.html">🎲 Dice</a>
+    <a href="slots.html">🎰 Slots</a>
+    <a href="crash.html">🚀 Crash</a>
+    <a href="history.html">📋 History</a>
+  </div>
+  <div class="footer-copy">© 2024 Fuckitt's Funhouse · For entertainment purposes only</div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/shared.js"></script>
+<script>
+  let myUsername = '';
+  let currentTab = 'profit';
+  let cache = {};
+
+  guardPage().then(async () => {
+    await initNav();
+    const profile = await fetchProfile();
+    myUsername = profile?.username ?? '';
+    loadTab('profit');
+  });
+
+  function setTab(tab, btn) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadTab(tab);
+  }
+
+  async function loadTab(tab) {
+    if (cache[tab]) { render(cache[tab], tab); return; }
+
+    document.getElementById('lbList').innerHTML =
+      '<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
+
+    let rows = [];
+
+    if (tab === 'profit') {
+      // Sum delta per user
+      const { data } = await db.from('bets').select('username, outcome');
+      if (data) {
+        const map = {};
+        data.forEach(b => {
+          map[b.username] = (map[b.username] || 0) + (b.outcome.delta || 0);
+        });
+        rows = Object.entries(map)
+          .map(([username, profit]) => ({ username, value: profit, sub: (profit >= 0 ? '+' : '') + '$' + profit.toLocaleString() + ' profit' }))
+          .sort((a,b) => b.value - a.value)
+          .slice(0, 20);
+      }
+    }
+
+    if (tab === 'wagered') {
+      const { data } = await db.from('bets').select('username, amount');
+      if (data) {
+        const map = {};
+        data.forEach(b => { map[b.username] = (map[b.username] || 0) + b.amount; });
+        rows = Object.entries(map)
+          .map(([username, value]) => ({ username, value, sub: '$' + value.toLocaleString() + ' wagered' }))
+          .sort((a,b) => b.value - a.value)
+          .slice(0, 20);
+      }
+    }
+
+    if (tab === 'bigwin') {
+      const { data } = await db.from('bets').select('username, amount, outcome').eq('outcome->>win', 'true');
+      if (data) {
+        const map = {};
+        data.forEach(b => {
+          const win = b.outcome.delta || 0;
+          if (!map[b.username] || win > map[b.username].value)
+            map[b.username] = { value: win, sub: '+$' + win.toLocaleString() + ' single win' };
+        });
+        rows = Object.entries(map)
+          .map(([username, d]) => ({ username, ...d }))
+          .sort((a,b) => b.value - a.value)
+          .slice(0, 20);
+      }
+    }
+
+    cache[tab] = rows;
+    render(rows, tab);
+  }
+
+  function render(rows, tab) {
+    const list = document.getElementById('lbList');
+    const bar  = document.getElementById('myRankBar');
+
+    if (!rows.length) {
+      list.innerHTML = '<div class="empty">No data yet — be the first to play!</div>';
+      bar.style.display = 'none';
+      return;
+    }
+
+    const myIdx = rows.findIndex(r => r.username === myUsername);
+    if (myIdx >= 0) {
+      bar.style.display = 'flex';
+      document.getElementById('myRank').textContent = '#' + (myIdx + 1);
+    } else {
+      bar.style.display = 'none';
+    }
+
+    const medals = ['🥇','🥈','🥉'];
+    list.innerHTML = '';
+    rows.forEach((row, i) => {
+      const isMe  = row.username === myUsername;
+      const cls   = i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : '';
+      const rank  = medals[i] || '#' + (i + 1);
+      const valColor = tab === 'profit' ? (row.value >= 0 ? 'green' : '') : '';
+      const div = document.createElement('div');
+      div.className = 'lb-row ' + cls + (isMe ? ' me' : '');
+      div.innerHTML = `
+        <div class="lb-rank">${rank}</div>
+        <div class="lb-name ${isMe ? 'me-label' : ''}">
+          ${escapeHtml(row.username)}${isMe ? ' (you)' : ''}
+          <div class="lb-sub">${row.sub}</div>
+        </div>
+        <div class="lb-val ${valColor}">${tab === 'profit' ? (row.value >= 0 ? '+' : '') + '$' + row.value.toLocaleString() : '$' + row.value.toLocaleString()}</div>`;
+      list.appendChild(div);
+    });
+  }
+</script>
+</body>
+</html>
