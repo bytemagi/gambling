@@ -6,78 +6,171 @@
 <title>Leaderboard · Fuckitt's Funhouse</title>
 <link rel="stylesheet" href="../css/shared.css">
 <style>
-.page { max-width:600px; margin:0 auto; padding:24px 16px 48px; }
-.page-title { font-family:'Cinzel',serif; font-size:1.6rem; font-weight:900; color:var(--gold); margin-bottom:4px; }
-.page-sub   { color:var(--muted); font-size:0.82rem; letter-spacing:1px; margin-bottom:24px; }
+.page { max-width:760px; margin:0 auto; padding:40px 20px 80px; }
 
-.tabs { display:flex; gap:8px; margin-bottom:20px; }
-.tab {
-  flex:1; padding:10px; border-radius:10px; border:1px solid var(--border);
-  background:transparent; color:var(--muted); font-family:'Cinzel',serif;
-  font-size:0.78rem; letter-spacing:1px; cursor:pointer; text-align:center;
-  transition:all 0.15s;
+.page-hero {
+  text-align:center; margin-bottom:40px;
 }
-.tab.active { border-color:var(--gold); color:var(--gold); background:#d4af3715; }
+.page-hero-icon { font-size:3rem; margin-bottom:12px; filter:drop-shadow(0 0 20px rgba(245,197,24,0.5)); }
+.page-title {
+  font-family:'Oswald',sans-serif;
+  font-size:2.2rem; font-weight:700; letter-spacing:1px;
+  color:var(--gold); margin-bottom:6px;
+}
+.page-sub { color:var(--muted); font-size:0.85rem; letter-spacing:1px; }
+
+.tabs {
+  display:flex; gap:8px; margin-bottom:24px;
+  background:var(--card); border:1px solid var(--border);
+  border-radius:12px; padding:5px;
+}
+.tab {
+  flex:1; padding:10px 14px; border-radius:9px;
+  border:none; background:transparent;
+  color:var(--muted); font-family:'Oswald',sans-serif;
+  font-size:0.82rem; letter-spacing:1px; cursor:pointer;
+  text-align:center; transition:all 0.18s;
+}
+.tab.active {
+  background:rgba(245,197,24,0.1);
+  border:1px solid rgba(245,197,24,0.25);
+  color:var(--gold);
+}
+.tab:not(.active):hover { color:var(--text); background:rgba(255,255,255,0.04); }
 
 .lb-list { display:flex; flex-direction:column; gap:8px; }
 
 .lb-row {
-  background:var(--card-bg); border:1px solid var(--border); border-radius:12px;
-  padding:14px 16px; display:flex; align-items:center; gap:14px;
-  animation:fadeIn 0.2s ease;
+  background:var(--card); border:1px solid var(--border);
+  border-radius:14px; padding:16px 20px;
+  display:flex; align-items:center; gap:16px;
+  animation:fadeIn 0.25s ease;
+  transition:border-color 0.2s, transform 0.2s;
 }
-.lb-row.top1 { border-color:#d4af37; background:linear-gradient(90deg,#d4af3710,var(--card-bg)); }
-.lb-row.top2 { border-color:#aaa; background:linear-gradient(90deg,#aaaaaa10,var(--card-bg)); }
-.lb-row.top3 { border-color:#cd7f32; background:linear-gradient(90deg,#cd7f3210,var(--card-bg)); }
-.lb-row.me   { border-color:var(--cyan); }
+.lb-row:hover { border-color:var(--border3); transform:translateX(3px); }
+.lb-row.top1 {
+  border-color:rgba(245,197,24,0.4);
+  background:linear-gradient(90deg, rgba(245,197,24,0.06), var(--card) 60%);
+}
+.lb-row.top2 {
+  border-color:rgba(192,192,192,0.35);
+  background:linear-gradient(90deg, rgba(192,192,192,0.05), var(--card) 60%);
+}
+.lb-row.top3 {
+  border-color:rgba(205,127,50,0.35);
+  background:linear-gradient(90deg, rgba(205,127,50,0.06), var(--card) 60%);
+}
+.lb-row.me { border-color:rgba(0,229,255,0.4); }
 
-.lb-rank { font-family:'Cinzel',serif; font-size:1.1rem; min-width:32px; text-align:center; }
-.lb-row.top1 .lb-rank { color:var(--gold); }
-.lb-row.top2 .lb-rank { color:#ccc; }
+.lb-rank {
+  font-family:'Oswald',sans-serif; font-size:1.3rem; font-weight:700;
+  min-width:38px; text-align:center; flex-shrink:0;
+}
+.lb-row.top1 .lb-rank { color:var(--gold); text-shadow:0 0 12px rgba(245,197,24,0.5); }
+.lb-row.top2 .lb-rank { color:#c8c8c8; }
 .lb-row.top3 .lb-rank { color:#cd7f32; }
 
-.lb-name  { flex:1; font-size:0.9rem; color:var(--text); }
-.lb-name.me-label { color:var(--cyan); }
-.lb-sub   { color:var(--muted); font-size:0.72rem; margin-top:2px; }
-.lb-val   { font-family:'Cinzel',serif; font-size:1rem; color:var(--gold); text-align:right; }
-.lb-val.green { color:var(--green); }
+.lb-avatar {
+  width:40px; height:40px; border-radius:50%;
+  background:linear-gradient(135deg, var(--purple), var(--cyan));
+  display:flex; align-items:center; justify-content:center;
+  font-size:1rem; font-weight:700; color:#fff; flex-shrink:0;
+  border:2px solid var(--border2);
+}
+.lb-row.top1 .lb-avatar { border-color:rgba(245,197,24,0.5); }
 
-.empty   { text-align:center; padding:48px 0; color:var(--muted); font-size:0.9rem; }
-.skeleton { background:var(--card-bg); border-radius:12px; height:60px; animation:pulse 1.2s ease-in-out infinite; margin-bottom:8px; }
-@keyframes pulse  { 0%,100%{opacity:0.4} 50%{opacity:0.8} }
-@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+.lb-name  { flex:1; }
+.lb-name strong {
+  font-size:0.95rem; color:var(--text); font-weight:600;
+  display:block; margin-bottom:2px;
+}
+.lb-name.me-label strong { color:var(--cyan); }
+.lb-sub   { color:var(--muted); font-size:0.73rem; }
+.lb-val {
+  font-family:'Oswald',sans-serif; font-size:1.1rem; font-weight:600;
+  text-align:right; flex-shrink:0;
+}
+.lb-val.gold  { color:var(--gold); }
+.lb-val.green { color:var(--green); }
+.lb-val.red   { color:var(--red); }
+
+.empty {
+  text-align:center; padding:64px 0;
+  color:var(--muted); font-size:0.95rem;
+}
+.empty-icon { font-size:3rem; margin-bottom:16px; opacity:0.4; }
+
+.skeleton {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:14px; height:72px;
+  animation:pulse 1.4s ease-in-out infinite;
+  margin-bottom:8px;
+  position:relative; overflow:hidden;
+}
+.skeleton::after {
+  content:'';
+  position:absolute; inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent);
+  animation:shimmer 1.8s ease infinite;
+}
 
 .my-rank-bar {
-  background:var(--card-bg); border:1px solid var(--cyan); border-radius:12px;
-  padding:12px 16px; margin-bottom:20px; display:flex; justify-content:space-between;
-  align-items:center; font-size:0.85rem;
+  background:rgba(0,229,255,0.05); border:1px solid rgba(0,229,255,0.2);
+  border-radius:12px; padding:14px 20px; margin-bottom:20px;
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:0.875rem; color:var(--text2);
 }
-.my-rank-bar span { color:var(--cyan); font-family:'Cinzel',serif; }
+.my-rank-bar span { color:var(--cyan); font-family:'Oswald',sans-serif; font-size:1.1rem; }
+
+@keyframes pulse  { 0%,100%{opacity:0.5} 50%{opacity:0.85} }
+@keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
 </style>
 </head>
 <body>
 
-<div class="site-header">
-  <div class="header-inner">
-    <div style="display:flex;align-items:center;gap:10px">
-      <a class="btn-back" href="index.html">‹ Lobby</a>
-      <a href="index.html"><img src="../logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse"></a>
-    </div>
+<!-- ── HEADER ─────────────────────────────────────────────── -->
+<header class="site-header">
+  <div class="header-top">
+    <a class="header-logo-wrap" href="index.html">
+      <img src="../logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse">
+    </a>
+
+    <nav class="header-nav">
+      <a class="nav-link" href="index.html"><span class="nav-icon">🏠</span> Lobby</a>
+      <a class="nav-link" href="slots.html"><span class="nav-icon">🎰</span> Slots</a>
+      <a class="nav-link" href="crash.html"><span class="nav-icon">🚀</span> Crash</a>
+      <a class="nav-link" href="mines.html"><span class="nav-icon">💣</span> Mines</a>
+      <a class="nav-link" href="coin.html"><span class="nav-icon">🪙</span> Coin Flip</a>
+      <a class="nav-link" href="dice.html"><span class="nav-icon">🎲</span> Dice</a>
+      <a class="nav-link active" href="leaderboard.html"><span class="nav-icon">🏆</span> Leaderboard</a>
+      <a class="nav-link" href="wallet.html"><span class="nav-icon">💳</span> Wallet</a>
+    </nav>
+
     <div class="header-right">
-      <div class="user-chip"><span class="dot online" id="statusDot"></span><span id="userLabel"></span></div>
-      <button class="btn-ghost" onclick="doLogout()">Logout</button>
+      <div class="balance-chip">
+        <span class="balance-chip-icon">💰</span>
+        <div class="balance-chip-inner">
+          <span class="balance-chip-label">Balance</span>
+          <span class="balance-chip-amount">$<span id="bal">0</span></span>
+        </div>
+      </div>
+      <div class="user-chip">
+        <span class="dot online" id="statusDot"></span>
+        <span id="userLabel"></span>
+      </div>
+      <button class="btn-ghost" onclick="doLogout()">Sign Out</button>
     </div>
   </div>
-</div>
+</header>
 
-<div class="balance-bar">
-  <span class="balance-label">Balance</span>
-  <span class="balance-amount">$<span id="bal">0</span></span>
-</div>
-
+<!-- ── PAGE ───────────────────────────────────────────────── -->
 <div class="page">
-  <div class="page-title">🏆 Leaderboard</div>
-  <div class="page-sub">All-time rankings across all players</div>
+
+  <div class="page-hero">
+    <div class="page-hero-icon">🏆</div>
+    <div class="page-title">Leaderboard</div>
+    <div class="page-sub">All-time rankings across all players</div>
+  </div>
 
   <div class="tabs">
     <button class="tab active" onclick="setTab('profit', this)">💰 Most Profit</button>
@@ -86,7 +179,8 @@
   </div>
 
   <div id="myRankBar" class="my-rank-bar" style="display:none">
-    Your rank: <span id="myRank">—</span>
+    <span>Your Ranking</span>
+    <span id="myRank">—</span>
   </div>
 
   <div class="lb-list" id="lbList">
@@ -96,22 +190,54 @@
     <div class="skeleton"></div>
     <div class="skeleton"></div>
   </div>
-</div>
 
+</div><!-- /.page -->
+
+<!-- ── FOOTER ─────────────────────────────────────────────── -->
 <footer class="site-footer">
-  <div class="footer-logo-wrap"><img src="../logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse"></div>
-  <div class="footer-tagline">Play Smart · Win Big · No Regrets</div>
-  <div class="footer-links">
-    <a href="index.html">🏠 Lobby</a>
-    <a href="coin.html">🪙 Coin</a>
-    <a href="dice.html">🎲 Dice</a>
-    <a href="slots.html">🎰 Slots</a>
-    <a href="crash.html">🚀 Crash</a>
-    <a href="mines.html">💣 Mines</a>
-    <a href="leaderboard.html">🏆 Leaderboard</a>
-    <a href="history.html">📋 History</a>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <img src="../logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse">
+      <p class="footer-brand-desc" style="margin-top:14px">
+        Fuckitt's Funhouse — provably fair casino for entertainment.
+        All results are cryptographically verifiable.
+      </p>
+    </div>
+    <div>
+      <div class="footer-col-title">Games</div>
+      <ul class="footer-col-links">
+        <li><a href="slots.html">🎰 Slot Machine</a></li>
+        <li><a href="crash.html">🚀 Crash</a></li>
+        <li><a href="mines.html">💣 Mines</a></li>
+        <li><a href="coin.html">🪙 Coin Flip</a></li>
+        <li><a href="dice.html">🎲 Dice Roll</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-col-title">Account</div>
+      <ul class="footer-col-links">
+        <li><a href="wallet.html">💳 Wallet</a></li>
+        <li><a href="history.html">📋 History</a></li>
+        <li><a href="index.html">🏠 Lobby</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-col-title">Info</div>
+      <ul class="footer-col-links">
+        <li><a href="#">🔐 Provably Fair</a></li>
+        <li><a href="#">🛡️ Responsible Gaming</a></li>
+        <li><a href="#">📜 Terms</a></li>
+      </ul>
+    </div>
   </div>
-  <div class="footer-copy">© 2024 Fuckitt's Funhouse · For entertainment purposes only</div>
+  <div class="footer-bottom">
+    <div class="footer-copy">© 2024 Fuckitt's Funhouse · For entertainment purposes only</div>
+    <div class="footer-badges">
+      <span class="footer-badge green">✓ Provably Fair</span>
+      <span class="footer-badge gold">⚡ Instant Payouts</span>
+      <span class="footer-badge">Est. 2024</span>
+    </div>
+  </div>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -121,8 +247,8 @@
   let currentTab = 'profit';
   let cache = {};
 
+  // guardPage() already calls initNav() internally — fetch profile for username only
   guardPage().then(async () => {
-    await initNav();
     const profile = await fetchProfile();
     myUsername = profile?.username ?? '';
     loadTab('profit');
@@ -132,6 +258,7 @@
     currentTab = tab;
     document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    cache = {}; // clear cache so fresh load
     loadTab(tab);
   }
 
@@ -139,20 +266,22 @@
     if (cache[tab]) { render(cache[tab], tab); return; }
 
     document.getElementById('lbList').innerHTML =
-      '<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
+      '<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
 
     let rows = [];
 
     if (tab === 'profit') {
-      // Sum delta per user
       const { data } = await db.from('bets').select('username, outcome');
       if (data) {
         const map = {};
         data.forEach(b => {
-          map[b.username] = (map[b.username] || 0) + (b.outcome.delta || 0);
+          map[b.username] = (map[b.username] || 0) + (b.outcome?.delta || 0);
         });
         rows = Object.entries(map)
-          .map(([username, profit]) => ({ username, value: profit, sub: (profit >= 0 ? '+' : '') + '$' + profit.toLocaleString() + ' profit' }))
+          .map(([username, profit]) => ({
+            username, value: profit,
+            sub: (profit >= 0 ? '+' : '') + '$' + profit.toLocaleString() + ' profit'
+          }))
           .sort((a,b) => b.value - a.value)
           .slice(0, 20);
       }
@@ -164,7 +293,10 @@
         const map = {};
         data.forEach(b => { map[b.username] = (map[b.username] || 0) + b.amount; });
         rows = Object.entries(map)
-          .map(([username, value]) => ({ username, value, sub: '$' + value.toLocaleString() + ' wagered' }))
+          .map(([username, value]) => ({
+            username, value,
+            sub: '$' + value.toLocaleString() + ' wagered'
+          }))
           .sort((a,b) => b.value - a.value)
           .slice(0, 20);
       }
@@ -175,7 +307,7 @@
       if (data) {
         const map = {};
         data.forEach(b => {
-          const win = b.outcome.delta || 0;
+          const win = b.outcome?.delta || 0;
           if (!map[b.username] || win > map[b.username].value)
             map[b.username] = { value: win, sub: '+$' + win.toLocaleString() + ' single win' };
         });
@@ -195,7 +327,11 @@
     const bar  = document.getElementById('myRankBar');
 
     if (!rows.length) {
-      list.innerHTML = '<div class="empty">No data yet — be the first to play!</div>';
+      list.innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">📊</div>
+          No data yet — be the first to play!
+        </div>`;
       bar.style.display = 'none';
       return;
     }
@@ -211,19 +347,29 @@
     const medals = ['🥇','🥈','🥉'];
     list.innerHTML = '';
     rows.forEach((row, i) => {
-      const isMe  = row.username === myUsername;
-      const cls   = i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : '';
-      const rank  = medals[i] || '#' + (i + 1);
-      const valColor = tab === 'profit' ? (row.value >= 0 ? 'green' : '') : '';
+      const isMe   = row.username === myUsername;
+      const cls    = i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : '';
+      const rank   = i < 3 ? medals[i] : '#' + (i + 1);
+      const valCls = tab === 'profit'
+        ? (row.value >= 0 ? 'green' : 'red')
+        : 'gold';
+      const valStr = tab === 'profit'
+        ? (row.value >= 0 ? '+' : '') + '$' + Math.abs(row.value).toLocaleString()
+        : '$' + row.value.toLocaleString();
+
+      // Avatar letter
+      const initial = (row.username || '?').charAt(0).toUpperCase();
+
       const div = document.createElement('div');
       div.className = 'lb-row ' + cls + (isMe ? ' me' : '');
       div.innerHTML = `
         <div class="lb-rank">${rank}</div>
+        <div class="lb-avatar">${initial}</div>
         <div class="lb-name ${isMe ? 'me-label' : ''}">
-          ${escapeHtml(row.username)}${isMe ? ' (you)' : ''}
+          <strong>${escapeHtml(row.username)}${isMe ? ' <small style="color:var(--cyan);font-size:0.7em">(you)</small>' : ''}</strong>
           <div class="lb-sub">${row.sub}</div>
         </div>
-        <div class="lb-val ${valColor}">${tab === 'profit' ? (row.value >= 0 ? '+' : '') + '$' + row.value.toLocaleString() : '$' + row.value.toLocaleString()}</div>`;
+        <div class="lb-val ${valCls}">${valStr}</div>`;
       list.appendChild(div);
     });
   }

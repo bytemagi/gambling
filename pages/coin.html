@@ -49,27 +49,64 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #7a5c0020 0%, transpa
   margin-top:-10px;
 }
 
+/* ── CHOICE BUTTONS ── */
+.choice-row { display:flex; gap:10px; margin-top:8px; }
+.btn-heads, .btn-tails {
+  flex:1; padding:14px;
+  border:2px solid; border-radius:10px;
+  font-size:1rem; font-weight:700; letter-spacing:0.5px;
+  cursor:pointer; transition:all 0.2s;
+}
+.btn-heads {
+  background:linear-gradient(135deg,#f5c518 0%,#d4a00a 100%);
+  border-color:#f5c518; color:#0a0b10;
+  box-shadow:0 4px 16px rgba(245,197,24,0.35);
+}
+.btn-heads:hover { filter:brightness(1.08); transform:translateY(-2px); box-shadow:0 8px 24px rgba(245,197,24,0.5); }
+.btn-tails {
+  background:linear-gradient(135deg,#606070 0%,#40404e 100%);
+  border-color:#888; color:#eee;
+  box-shadow:0 4px 16px rgba(0,0,0,0.35);
+}
+.btn-tails:hover { filter:brightness(1.2); transform:translateY(-2px); }
+.btn-heads:active, .btn-tails:active { transform:scale(0.97); }
+.btn-heads:disabled, .btn-tails:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; }
+
 </style>
 </head>
 <body>
 
-<div class="site-header">
-  <div class="header-inner">
-    <div style="display:flex;align-items:center;gap:10px">
-      <a class="btn-back" href="index.html">‹ Lobby</a>
-      <a href="index.html"><img src="../logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse"></a>
-    </div>
+<header class="site-header">
+  <div class="header-top">
+    <a class="header-logo-wrap" href="index.html">
+      <img src="../logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse">
+    </a>
+    <nav class="header-nav">
+      <a class="nav-link" href="index.html"><span class="nav-icon">🏠</span> Lobby</a>
+      <a class="nav-link" href="slots.html"><span class="nav-icon">🎰</span> Slots</a>
+      <a class="nav-link" href="crash.html"><span class="nav-icon">🚀</span> Crash</a>
+      <a class="nav-link" href="mines.html"><span class="nav-icon">💣</span> Mines</a>
+      <a class="nav-link active" href="coin.html"><span class="nav-icon">🪙</span> Coin Flip</a>
+      <a class="nav-link" href="dice.html"><span class="nav-icon">🎲</span> Dice</a>
+      <a class="nav-link" href="leaderboard.html"><span class="nav-icon">🏆</span> Leaderboard</a>
+      <a class="nav-link" href="wallet.html"><span class="nav-icon">💳</span> Wallet</a>
+    </nav>
     <div class="header-right">
-      <div class="user-chip"><span class="dot online"></span><span id="userLabel"></span></div>
-      <button class="btn-ghost" onclick="doLogout()">Logout</button>
+      <div class="balance-chip">
+        <span class="balance-chip-icon">💰</span>
+        <div class="balance-chip-inner">
+          <span class="balance-chip-label">Balance</span>
+          <span class="balance-chip-amount">$<span id="bal">0</span></span>
+        </div>
+      </div>
+      <div class="user-chip">
+        <span class="dot online" id="statusDot"></span>
+        <span id="userLabel"></span>
+      </div>
+      <button class="btn-ghost" onclick="doLogout()">Sign Out</button>
     </div>
   </div>
-</div>
-
-<div class="balance-bar">
-  <span class="balance-label">Balance</span>
-  <span class="balance-amount">$<span id="bal">0</span></span>
-</div>
+</header>
 
 <div class="page">
   <div class="game-title-bar">
@@ -125,20 +162,24 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #7a5c0020 0%, transpa
   </div>
 </div>
 
-<footer class="site-footer">
-  <div class="footer-logo-wrap"><img src="../logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse"></div>
-  <div class="footer-tagline">Play Smart · Win Big · No Regrets</div>
-  <div class="footer-links">
+<footer class="site-footer" style="padding:36px 24px 28px;text-align:center;margin-top:60px">
+  <img src="../logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse" style="margin:0 auto 18px">
+  <div class="footer-links" style="margin-bottom:18px">
     <a href="index.html">🏠 Lobby</a>
-    <a href="coin.html">🪙 Coin</a>
-    <a href="dice.html">🎲 Dice</a>
     <a href="slots.html">🎰 Slots</a>
     <a href="crash.html">🚀 Crash</a>
     <a href="mines.html">💣 Mines</a>
+    <a href="coin.html">🪙 Coin</a>
+    <a href="dice.html">🎲 Dice</a>
     <a href="leaderboard.html">🏆 Leaderboard</a>
+    <a href="wallet.html">💳 Wallet</a>
     <a href="history.html">📋 History</a>
   </div>
-  <div class="spray-tag" style="opacity:0.2;margin-bottom:8px">✦ FUCKITT'S FUNHOUSE ✦ EST. 2024 ✦ PLAY AT YOUR OWN RISK ✦</div>
+  <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+    <span class="footer-badge green">✓ Provably Fair</span>
+    <span class="footer-badge gold">⚡ Instant Payouts</span>
+    <span class="footer-badge">🔒 Secure · Est. 2024</span>
+  </div>
   <div class="footer-copy">© 2024 Fuckitt's Funhouse · For entertainment purposes only</div>
 </footer>
 
@@ -165,6 +206,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #7a5c0020 0%, transpa
     coin.classList.remove('flipping');
     void coin.offsetWidth;
     coin.classList.add('flipping');
+    soundCoinFlip();
 
     // Fix #7 — run API and minimum animation delay in parallel
     const [res] = await Promise.all([

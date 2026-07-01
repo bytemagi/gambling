@@ -85,23 +85,37 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #00b89420 0%, transpa
 </head>
 <body>
 
-<div class="site-header">
-  <div class="header-inner">
-    <div style="display:flex;align-items:center;gap:10px">
-      <a class="btn-back" href="index.html">‹ Lobby</a>
-      <a href="index.html"><img src="../logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse"></a>
-    </div>
+<header class="site-header">
+  <div class="header-top">
+    <a class="header-logo-wrap" href="index.html">
+      <img src="../logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse">
+    </a>
+    <nav class="header-nav">
+      <a class="nav-link" href="index.html"><span class="nav-icon">🏠</span> Lobby</a>
+      <a class="nav-link" href="slots.html"><span class="nav-icon">🎰</span> Slots</a>
+      <a class="nav-link" href="crash.html"><span class="nav-icon">🚀</span> Crash</a>
+      <a class="nav-link active" href="mines.html"><span class="nav-icon">💣</span> Mines</a>
+      <a class="nav-link" href="coin.html"><span class="nav-icon">🪙</span> Coin Flip</a>
+      <a class="nav-link" href="dice.html"><span class="nav-icon">🎲</span> Dice</a>
+      <a class="nav-link" href="leaderboard.html"><span class="nav-icon">🏆</span> Leaderboard</a>
+      <a class="nav-link" href="wallet.html"><span class="nav-icon">💳</span> Wallet</a>
+    </nav>
     <div class="header-right">
-      <div class="user-chip"><span class="dot online" id="statusDot"></span><span id="userLabel"></span></div>
-      <button class="btn-ghost" onclick="doLogout()">Logout</button>
+      <div class="balance-chip">
+        <span class="balance-chip-icon">💰</span>
+        <div class="balance-chip-inner">
+          <span class="balance-chip-label">Balance</span>
+          <span class="balance-chip-amount">$<span id="bal">0</span></span>
+        </div>
+      </div>
+      <div class="user-chip">
+        <span class="dot online" id="statusDot"></span>
+        <span id="userLabel"></span>
+      </div>
+      <button class="btn-ghost" onclick="doLogout()">Sign Out</button>
     </div>
   </div>
-</div>
-
-<div class="balance-bar">
-  <span class="balance-label">Balance</span>
-  <span class="balance-amount">$<span id="bal">0</span></span>
-</div>
+</header>
 
 <div class="page">
   <div class="game-title-bar">
@@ -160,18 +174,23 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #00b89420 0%, transpa
   </div>
 </div>
 
-<footer class="site-footer">
-  <div class="footer-logo-wrap"><img src="../logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse"></div>
-  <div class="footer-tagline">Play Smart · Win Big · No Regrets</div>
-  <div class="footer-links">
+<footer class="site-footer" style="padding:36px 24px 28px;text-align:center;margin-top:60px">
+  <img src="../logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse" style="margin:0 auto 18px">
+  <div class="footer-links" style="margin-bottom:18px">
     <a href="index.html">🏠 Lobby</a>
-    <a href="coin.html">🪙 Coin</a>
-    <a href="dice.html">🎲 Dice</a>
     <a href="slots.html">🎰 Slots</a>
     <a href="crash.html">🚀 Crash</a>
     <a href="mines.html">💣 Mines</a>
+    <a href="coin.html">🪙 Coin</a>
+    <a href="dice.html">🎲 Dice</a>
     <a href="leaderboard.html">🏆 Leaderboard</a>
+    <a href="wallet.html">💳 Wallet</a>
     <a href="history.html">📋 History</a>
+  </div>
+  <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+    <span class="footer-badge green">✓ Provably Fair</span>
+    <span class="footer-badge gold">⚡ Instant Payouts</span>
+    <span class="footer-badge">🔒 Secure · Est. 2024</span>
   </div>
   <div class="footer-copy">© 2024 Fuckitt's Funhouse · For entertainment purposes only</div>
 </footer>
@@ -299,7 +318,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #00b89420 0%, transpa
       minePositions = res.mines || [];
       cell.className = 'mine-cell revealed-mine';
       cell.textContent = '💣';
-      soundLose();
+      soundMineExplode();
       setResult('💥 You hit a mine and lost this round.', 'lose');
       showAllMines(minePositions, idx);
       document.getElementById('btnCashout').disabled = true;

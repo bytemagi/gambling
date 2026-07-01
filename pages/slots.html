@@ -101,27 +101,56 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #4a0a6e20 0%, transpa
 .pay-symbols { font-size:1rem; letter-spacing:2px; }
 .pay-mult { font-family:'Cinzel',serif; color:var(--gold); }
 
+/* ── SPIN BUTTON ── */
+.btn-spin {
+  display:block; width:100%;
+  padding:16px 24px; margin-top:8px;
+  background:linear-gradient(135deg,#6c3483 0%,#9b59b6 100%);
+  color:#fff; font-family:'Oswald',sans-serif;
+  font-size:1.1rem; font-weight:700; letter-spacing:3px;
+  border:none; border-radius:10px; cursor:pointer;
+  transition:all 0.2s;
+  box-shadow:0 4px 22px rgba(108,52,131,0.45);
+}
+.btn-spin:hover { filter:brightness(1.1); transform:translateY(-1px); box-shadow:0 8px 28px rgba(108,52,131,0.65); }
+.btn-spin:active { transform:scale(0.97); }
+.btn-spin:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; }
+
 </style>
 </head>
 <body>
 
-<div class="site-header">
-  <div class="header-inner">
-    <div style="display:flex;align-items:center;gap:10px">
-      <a class="btn-back" href="index.html">‹ Lobby</a>
-      <a href="index.html"><img src="../logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse"></a>
-    </div>
+<header class="site-header">
+  <div class="header-top">
+    <a class="header-logo-wrap" href="index.html">
+      <img src="../logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse">
+    </a>
+    <nav class="header-nav">
+      <a class="nav-link" href="index.html"><span class="nav-icon">🏠</span> Lobby</a>
+      <a class="nav-link active" href="slots.html"><span class="nav-icon">🎰</span> Slots <span class="nav-badge hot">HOT</span></a>
+      <a class="nav-link" href="crash.html"><span class="nav-icon">🚀</span> Crash</a>
+      <a class="nav-link" href="mines.html"><span class="nav-icon">💣</span> Mines</a>
+      <a class="nav-link" href="coin.html"><span class="nav-icon">🪙</span> Coin Flip</a>
+      <a class="nav-link" href="dice.html"><span class="nav-icon">🎲</span> Dice</a>
+      <a class="nav-link" href="leaderboard.html"><span class="nav-icon">🏆</span> Leaderboard</a>
+      <a class="nav-link" href="wallet.html"><span class="nav-icon">💳</span> Wallet</a>
+    </nav>
     <div class="header-right">
-      <div class="user-chip"><span class="dot online"></span><span id="userLabel"></span></div>
-      <button class="btn-ghost" onclick="doLogout()">Logout</button>
+      <div class="balance-chip">
+        <span class="balance-chip-icon">💰</span>
+        <div class="balance-chip-inner">
+          <span class="balance-chip-label">Balance</span>
+          <span class="balance-chip-amount">$<span id="bal">0</span></span>
+        </div>
+      </div>
+      <div class="user-chip">
+        <span class="dot online" id="statusDot"></span>
+        <span id="userLabel"></span>
+      </div>
+      <button class="btn-ghost" onclick="doLogout()">Sign Out</button>
     </div>
   </div>
-</div>
-
-<div class="balance-bar">
-  <span class="balance-label">Balance</span>
-  <span class="balance-amount">$<span id="bal">0</span></span>
-</div>
+</header>
 
 <div class="page">
   <div class="game-title-bar">
@@ -162,7 +191,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #4a0a6e20 0%, transpa
     <div class="pay-row"><span class="pay-symbols">7️⃣7️⃣7️⃣</span><span class="pay-mult">10× BET — JACKPOT</span></div>
     <div class="pay-row"><span class="pay-symbols">⭐⭐⭐</span><span class="pay-mult">5× BET — BIG WIN</span></div>
     <div class="pay-row"><span class="pay-symbols">🍒🍒🍒</span><span class="pay-mult">5× BET</span></div>
-    <div class="pay-row"><span class="pay-symbols">Any pair</span><span class="pay-mult">1× BET</span></div>
+    <div class="pay-row"><span class="pay-symbols">Any pair</span><span class="pay-mult" style="color:var(--muted)">Push — bet returned</span></div>
     <div class="pay-row"><span class="pay-symbols">No match</span><span style="color:var(--red)">Lose bet</span></div>
   </div>
 
@@ -195,20 +224,24 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #4a0a6e20 0%, transpa
   </div>
 </div>
 
-<footer class="site-footer">
-  <div class="footer-logo-wrap"><img src="../logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse"></div>
-  <div class="footer-tagline">Play Smart · Win Big · No Regrets</div>
-  <div class="footer-links">
+<footer class="site-footer" style="padding:36px 24px 28px;text-align:center;margin-top:60px">
+  <img src="../logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse" style="margin:0 auto 18px">
+  <div class="footer-links" style="margin-bottom:18px">
     <a href="index.html">🏠 Lobby</a>
-    <a href="coin.html">🪙 Coin</a>
-    <a href="dice.html">🎲 Dice</a>
     <a href="slots.html">🎰 Slots</a>
     <a href="crash.html">🚀 Crash</a>
     <a href="mines.html">💣 Mines</a>
+    <a href="coin.html">🪙 Coin</a>
+    <a href="dice.html">🎲 Dice</a>
     <a href="leaderboard.html">🏆 Leaderboard</a>
+    <a href="wallet.html">💳 Wallet</a>
     <a href="history.html">📋 History</a>
   </div>
-  <div class="spray-tag" style="opacity:0.2;margin-bottom:8px">✦ FUCKITT'S FUNHOUSE ✦ EST. 2024 ✦ PLAY AT YOUR OWN RISK ✦</div>
+  <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+    <span class="footer-badge green">✓ Provably Fair</span>
+    <span class="footer-badge gold">⚡ Instant Payouts</span>
+    <span class="footer-badge">🔒 Secure · Est. 2024</span>
+  </div>
   <div class="footer-copy">© 2024 Fuckitt's Funhouse · For entertainment purposes only</div>
 </footer>
 
@@ -270,10 +303,12 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #4a0a6e20 0%, transpa
     });
     updateBal(res.balance);
     const gain = Math.abs(res.delta);
-    const isJackpot = res.delta >= amount * 5;
+    // Jackpot = 7s (10×) or Diamonds (20×); 5× wins (⭐,🍒) are regular big wins
+    const isJackpot = res.delta >= amount * 10;
       if (res.win && isJackpot) {
         soundJackpot();
-        setResult('💎 JACKPOT! YOU WIN $' + gain + '!', 'jackpot-win');
+        const jackpotLabel = res.delta >= amount * 20 ? '💎 MEGA JACKPOT' : '7️⃣ JACKPOT';
+        setResult(jackpotLabel + '! YOU WIN $' + gain + '!', 'jackpot-win');
         [1,2,3].forEach(n => document.getElementById('rw'+n).classList.add('jackpot'));
         setTimeout(() => [1,2,3].forEach(n => document.getElementById('rw'+n).classList.remove('jackpot')), 2000);
         spawnParticles(30);
