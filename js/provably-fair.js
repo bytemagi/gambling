@@ -73,6 +73,11 @@ function deriveOutcome(game, hex) {
       SYMBOLS[parseInt(hex.slice(16,24), 16) % 6],
     ];
   }
+  if (game === 'crash') {
+    // Must match Edge Function formula exactly
+    const v = parseInt(hex.slice(0, 8), 16);
+    return Math.max(1.00, parseFloat((100 / (1 - (v / 0xFFFFFFFF) * 0.99)).toFixed(2)));
+  }
   return null;
 }
 

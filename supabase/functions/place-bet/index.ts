@@ -43,6 +43,13 @@ function deriveOutcome(game: string, hex: string, amount: number) {
       delta = -amount;
     return { outcome: reels, win: delta > 0, delta };
   }
+  if (game === 'crash') {
+    // Crash point derived from first 8 hex chars, scaled to 1.00–100.00×
+    // Same formula must be mirrored in provably-fair.js deriveOutcome()
+    const v = parseInt(hex.slice(0, 8), 16);
+    const crashPoint = Math.max(1.00, parseFloat(((100 / (1 - (v / 0xFFFFFFFF) * 0.99))).toFixed(2)));
+    return { outcome: crashPoint, win: false, delta: 0 }; // win/delta set by applyChoice
+  }
   throw new Error(`Unknown game: ${game}`);
 }
 
@@ -55,7 +62,15 @@ function applyChoice(game: string, derived: ReturnType<typeof deriveOutcome>, ch
     const win = derived.outcome === choice;
     return { ...derived, win, delta: win ? amount * 5 : -amount };
   }
-  return derived; // slots has no choice
+  if (game === 'crash') {
+    // choice = cashoutAt multiplier (e.g. 2.5)
+    const cashoutAt  = typeof choice === 'number' ? choice : parseFloat(choice as string);
+    const crashPoint = derived.outcome as number;
+    const win        = cashoutAt <= crashPoint;
+    const delta      = win ? Math.floor(amount * cashoutAt) - amount : -amount;
+    return { ...derived, outcome: crashPoint, win, delta, cashoutAt };
+  }
+  return derived;
 }
 
 Deno.serve(async (req) => {
@@ -74,7 +89,7 @@ Deno.serve(async (req) => {
 
   const { game, amount, choice, clientSeed, nonce } = await req.json();
 
-  if (!['coin','dice','slots'].includes(game))
+  if (!['coin','dice','slots','crash'].includes(game))
     return new Response(JSON.stringify({ error: 'Invalid game' }), { status: 400 });
   if (!Number.isInteger(amount) || amount <= 0 || amount > 100000)
     return new Response(JSON.stringify({ error: 'Invalid amount' }), { status: 400 });

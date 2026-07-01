@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crash · Fuckitt's Funhouse</title>
+<link rel="stylesheet" href="../css/shared.css">
+<style>
+:root { --orange:#e67e22; --orange2:#f39c12; }
+body { background-image:radial-gradient(ellipse at 50% 0%, #3a1a0020 0%, transparent 60%), repeating-linear-gradient(45deg,#ffffff03 0,#ffffff03 1px,transparent 1px,transparent 8px); }
+.game-title-bar h1 { background:linear-gradient(180deg,var(--orange2),var(--orange)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+
+/* ── CRASH ARENA ── */
+.crash-arena {
+  position:relative; background:linear-gradient(180deg,#0a0a14,#060e16);
+  border:1px solid var(--border); border-radius:20px;
+  height:260px; margin-bottom:20px; overflow:hidden;
+}
+
+/* graph canvas */
+#crashCanvas { position:absolute; inset:0; width:100%; height:100%; }
+
+/* big multiplier display */
+.crash-mult {
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; pointer-events:none;
+}
+.mult-value {
+  font-family:'Cinzel',serif; font-size:3.5rem; font-weight:900;
+  color:#fff; text-shadow:0 0 40px currentColor;
+  transition:color 0.2s;
+  line-height:1;
+}
+.mult-value.running { color:var(--orange2); text-shadow:0 0 40px #f39c1280; }
+.mult-value.won     { color:var(--green);   text-shadow:0 0 40px #27ae6080; }
+.mult-value.crashed { color:var(--red);     text-shadow:0 0 40px #c0392b80; }
+.mult-label {
+  font-size:0.72rem; letter-spacing:3px; text-transform:uppercase;
+  color:var(--muted); margin-top:4px;
+}
+
+/* ── CASHOUT BUTTON ── */
+.btn-cashout {
+  width:100%; padding:18px; border:none; border-radius:10px; cursor:pointer;
+  font-family:'Cinzel',serif; font-size:1.1rem; font-weight:700; letter-spacing:2px;
+  background:linear-gradient(180deg,var(--orange2),var(--orange),#a04010);
+  color:#fff; box-shadow:0 4px 24px #e67e2240;
+  transition:filter 0.1s, transform 0.1s;
+}
+.btn-cashout:hover   { filter:brightness(1.1); }
+.btn-cashout:active  { transform:scale(0.98); }
+.btn-cashout:disabled { opacity:0.4; cursor:not-allowed; }
+
+/* auto-cashout row */
+.auto-row { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+.auto-row label { color:var(--muted); font-size:0.85rem; white-space:nowrap; }
+.auto-input {
+  width:90px; padding:10px; border-radius:8px; border:1px solid var(--border);
+  background:#060e16; color:var(--orange2); font-family:'Cinzel',serif;
+  font-size:1rem; text-align:center; outline:none; transition:border-color 0.2s;
+}
+.auto-input:focus { border-color:var(--orange2); }
+
+/* potential win display */
+.potential {
+  text-align:center; font-family:'Cinzel',serif; font-size:0.85rem;
+  color:var(--muted); margin-bottom:16px; min-height:20px;
+}
+.potential span { color:var(--orange2); }
+
+/* history — crash-specific overrides */
+.history-item.crashed-out { border-left-color:var(--orange); }
+.history-item.crashed-out .h-amt { color:var(--orange2); }
+</style>
+</head>
+<body>
+
+<div class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:10px">
+      <a class="btn-back" href="index.html">‹ Lobby</a>
+      <a href="index.html"><img src="../logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse"></a>
+    </div>
+    <div class="header-right">
+      <div class="user-chip"><span class="dot online" id="statusDot"></span><span id="userLabel"></span></div>
+      <button class="btn-ghost" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+</div>
+
+<div class="balance-bar">
+  <span class="balance-label">Balance</span>
+  <span class="balance-amount">$<span id="bal">0</span></span>
+</div>
+
+<div class="page">
+  <div class="game-title-bar">
+    <h1>🚀 Crash</h1>
+    <p>Set your auto-cashout · Bet · Pray it doesn't crash first</p>
+  </div>
+
+  <div class="crash-arena">
+    <canvas id="crashCanvas"></canvas>
+    <div class="crash-mult">
+      <div class="mult-value" id="multValue">1.00×</div>
+      <div class="mult-label" id="multLabel">waiting</div>
+    </div>
+  </div>
+
+  <div class="odds-row">
+    <div class="odds-box"><div class="odds-label">House Edge</div><div class="odds-val" style="color:var(--orange2)">1%</div></div>
+    <div class="odds-box"><div class="odds-label">Max Payout</div><div class="odds-val" style="color:var(--orange2)">100×</div></div>
+    <div class="odds-box"><div class="odds-label">Min Cashout</div><div class="odds-val" style="color:var(--orange2)">1.01×</div></div>
+  </div>
+
+  <div class="bet-panel">
+    <div class="bet-panel-title">Place Your Bet</div>
+    <div class="bet-amount-row">
+      <label>Bet $</label>
+      <input class="bet-input" type="number" id="betAmt" value="5" min="1" oninput="updatePotential()">
+    </div>
+    <div class="quick-bets">
+      <div class="qb" onclick="setQuickBet(5)">$5</div>
+      <div class="qb" onclick="setQuickBet(10)">$10</div>
+      <div class="qb" onclick="setQuickBet(25)">$25</div>
+      <div class="qb" onclick="setQuickBet(50)">$50</div>
+      <div class="qb" onclick="halfBet()">½</div>
+      <div class="qb" onclick="doubleBet()">2×</div>
+    </div>
+    <div class="auto-row">
+      <label>Auto-cashout at</label>
+      <input class="auto-input" type="number" id="autoCashout" value="2.00" min="1.01" step="0.1" oninput="updatePotential()">
+      <span style="color:var(--muted);font-size:0.85rem">×</span>
+    </div>
+    <div class="potential" id="potential">Potential win: <span>$5.00</span></div>
+    <button class="btn-cashout" id="btnPlay" onclick="play()">🚀 Launch</button>
+  </div>
+
+  <div class="result-banner idle" id="result">Set your auto-cashout multiplier and launch</div>
+
+  <div class="history">
+    <div class="history-title">Recent Crashes</div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <div class="pf-widget" id="pfWidget">
+    <div class="pf-title">🔐 Provably Fair</div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-logo-wrap"><img src="../logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse"></div>
+  <div class="footer-tagline">Play Smart · Win Big · No Regrets</div>
+  <div class="footer-links">
+    <a href="index.html">🏠 Lobby</a>
+    <a href="coin.html">🪙 Coin</a>
+    <a href="dice.html">🎲 Dice</a>
+    <a href="slots.html">🎰 Slots</a>
+    <a href="history.html">📋 History</a>
+  </div>
+  <div class="footer-copy">© 2024 Fuckitt's Funhouse · For entertainment purposes only</div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/shared.js"></script>
+<script src="../js/provably-fair.js"></script>
+<script>
+  guardPage();
+  initNav();
+  renderPFWidget('pfWidget', { serverSeedHash: '—', clientSeed: getClientSeed(), nonce: getNonce() });
+
+  // ── Canvas graph ──────────────────────────────────────────
+  const canvas = document.getElementById('crashCanvas');
+  const ctx    = canvas.getContext('2d');
+  let points   = [];
+
+  function resizeCanvas() {
+    canvas.width  = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  function drawGraph(currentMult, crashed) {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    if (points.length < 2) return;
+
+    const maxMult = Math.max(currentMult, 2);
+    const pad = { l:40, r:20, t:20, b:30 };
+
+    const toX = m => pad.l + ((m - 1) / (maxMult - 1)) * (W - pad.l - pad.r);
+    const toY = m => H - pad.b - ((m - 1) / (maxMult - 1)) * (H - pad.t - pad.b);
+
+    // grid lines
+    ctx.strokeStyle = '#ffffff08';
+    ctx.lineWidth = 1;
+    for (let m = 1; m <= Math.ceil(maxMult); m++) {
+      const y = toY(m);
+      ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+      ctx.fillStyle = '#ffffff30';
+      ctx.font = '10px Inter';
+      ctx.fillText(m + '×', 4, y + 4);
+    }
+
+    // curve
+    const grad = ctx.createLinearGradient(0, 0, W, 0);
+    grad.addColorStop(0, crashed ? '#c0392b' : '#e67e22');
+    grad.addColorStop(1, crashed ? '#e74c3c' : '#f39c12');
+
+    ctx.beginPath();
+    ctx.moveTo(toX(points[0]), toY(points[0]));
+    for (let i = 1; i < points.length; i++) ctx.lineTo(toX(points[i]), toY(points[i]));
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 3;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    // fill under curve
+    ctx.lineTo(toX(points[points.length-1]), H - pad.b);
+    ctx.lineTo(toX(points[0]), H - pad.b);
+    ctx.closePath();
+    ctx.fillStyle = crashed ? '#c0392b10' : '#e67e2210';
+    ctx.fill();
+
+    // dot at tip
+    const tip = points[points.length - 1];
+    ctx.beginPath();
+    ctx.arc(toX(tip), toY(tip), 5, 0, Math.PI * 2);
+    ctx.fillStyle = crashed ? '#e74c3c' : '#f39c12';
+    ctx.fill();
+  }
+
+  // ── Game state ────────────────────────────────────────────
+  let animFrame  = null;
+  let startTime  = null;
+  let cashedOut  = false;
+  let gameActive = false;
+  let serverCrashPoint = null;
+
+  function setQuickBet(n) { document.getElementById('betAmt').value = Math.min(n, currentBalance); updatePotential(); }
+  function halfBet()   { const el=document.getElementById('betAmt'); el.value=Math.max(1,Math.floor(parseInt(el.value||1)/2)); updatePotential(); }
+  function doubleBet() { const el=document.getElementById('betAmt'); el.value=Math.min(parseInt(el.value||1)*2, currentBalance); updatePotential(); }
+
+  function updatePotential() {
+    const amt  = parseFloat(document.getElementById('betAmt').value) || 0;
+    const mult = parseFloat(document.getElementById('autoCashout').value) || 1;
+    const win  = (amt * mult).toFixed(2);
+    document.getElementById('potential').innerHTML = `Potential win: <span>$${win}</span>`;
+  }
+  updatePotential();
+
+  // ── Multiplier growth curve: exponential feel ─────────────
+  // mult(t) = e^(0.00006 * t)  where t is ms elapsed
+  // Grows slowly at first, accelerates — matches feel of Stake/Roobet
+  function multAtTime(ms) {
+    return parseFloat(Math.pow(Math.E, 0.00006 * ms).toFixed(2));
+  }
+
+  async function play() {
+    const amount     = parseInt(document.getElementById('betAmt').value) || 0;
+    const cashoutAt  = parseFloat(document.getElementById('autoCashout').value) || 2.0;
+
+    if (amount <= 0 || amount > currentBalance) { setResult('Invalid bet amount', 'idle'); return; }
+    if (cashoutAt < 1.01) { setResult('Auto-cashout must be ≥ 1.01×', 'idle'); return; }
+
+    document.getElementById('btnPlay').disabled = true;
+    gameActive = true;
+    cashedOut  = false;
+    points     = [1.00];
+
+    setMultDisplay('1.00×', 'running', 'launching…');
+    setResult('🚀 Flying…', 'idle');
+
+    // Fetch result from server (server knows crash point, we animate up to it)
+    const resPromise = apiPlaceBet('crash', amount, cashoutAt);
+
+    startTime = performance.now();
+
+    function tick() {
+      const elapsed = performance.now() - startTime;
+      const current = multAtTime(elapsed);
+      points.push(current);
+      drawGraph(current, false);
+      setMultDisplay(current.toFixed(2) + '×', 'running', 'flying…');
+
+      // Auto-cashout threshold reached client-side — stop animating, wait for server
+      if (current >= cashoutAt && !cashedOut) {
+        cashedOut = true;
+        setMultDisplay(current.toFixed(2) + '×', 'running', 'cashing out…');
+      }
+
+      animFrame = requestAnimationFrame(tick);
+    }
+    animFrame = requestAnimationFrame(tick);
+
+    // Wait for server result
+    const res = await resPromise;
+    cancelAnimationFrame(animFrame);
+
+    if (!res.ok) {
+      gameActive = false;
+      document.getElementById('btnPlay').disabled = false;
+      setResult('Error: ' + res.error, 'idle');
+      return;
+    }
+
+    serverCrashPoint = res.outcome;
+
+    // Animate to crash point then show result
+    const crashMs = Math.log(serverCrashPoint) / 0.00006;
+    const elapsed  = performance.now() - startTime;
+
+    if (elapsed < crashMs) {
+      // Still need to animate to crash point
+      await new Promise(resolve => {
+        function finishTick() {
+          const e2 = performance.now() - startTime;
+          const m  = multAtTime(e2);
+          points.push(m);
+          if (e2 >= crashMs) { resolve(); return; }
+          drawGraph(m, false);
+          setMultDisplay(m.toFixed(2) + '×', 'running', res.win ? 'cashing out…' : 'flying…');
+          requestAnimationFrame(finishTick);
+        }
+        requestAnimationFrame(finishTick);
+      });
+    }
+
+    // Final state
+    points.push(serverCrashPoint);
+    drawGraph(serverCrashPoint, !res.win);
+    updateBal(res.balance);
+    document.getElementById('btnPlay').disabled = false;
+    gameActive = false;
+
+    if (res.win) {
+      const profit = res.delta;
+      setMultDisplay(res.cashoutAt.toFixed(2) + '×', 'won', 'cashed out!');
+      setResult('🎉 CASHED OUT AT ' + res.cashoutAt.toFixed(2) + '× — WIN $' + profit + '!', 'win');
+      spawnParticles();
+    } else {
+      setMultDisplay(serverCrashPoint.toFixed(2) + '×', 'crashed', 'crashed!');
+      setResult('💥 CRASHED AT ' + serverCrashPoint.toFixed(2) + '× — LOSE $' + amount, 'lose');
+    }
+
+    addHistory(serverCrashPoint, res.win, res.cashoutAt, amount, res.delta);
+    renderPFVerify('pfWidget', {
+      serverSeed: res.serverSeed, serverSeedHash: res.serverSeedHash,
+      clientSeed: res.clientSeed, nonce: res.nonce,
+      game: 'crash', outcome: res.outcome
+    });
+  }
+
+  function setMultDisplay(val, cls, label) {
+    const el = document.getElementById('multValue');
+    el.textContent = val;
+    el.className   = 'mult-value ' + cls;
+    document.getElementById('multLabel').textContent = label;
+  }
+
+  function setResult(msg, cls) {
+    const el = document.getElementById('result');
+    el.textContent = msg;
+    el.className   = 'result-banner ' + cls;
+  }
+
+  function addHistory(crashPoint, win, cashoutAt, bet, delta) {
+    const list = document.getElementById('historyList');
+    const item = document.createElement('div');
+    const cls  = win ? 'win' : delta === 0 ? 'crashed-out' : 'lose';
+    item.className = 'history-item ' + cls;
+    const left = win
+      ? `🚀 Cashed ${cashoutAt.toFixed(2)}× · Crashed ${crashPoint.toFixed(2)}×`
+      : `💥 Crashed ${crashPoint.toFixed(2)}×`;
+    item.innerHTML = `<span>${left}</span><span class="h-amt">${win?'+':'−'}$${Math.abs(delta)||bet}</span>`;
+    list.prepend(item);
+    if (list.children.length > 8) list.lastChild.remove();
+  }
+
+  function spawnParticles() {
+    const cx = window.innerWidth/2, cy = window.innerHeight/3;
+    for (let i = 0; i < 24; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = 6 + Math.random()*8, angle = Math.random()*Math.PI*2, dist = 80+Math.random()*160;
+      p.style.cssText = `width:${size}px;height:${size}px;background:#f39c12;left:${cx}px;top:${cy}px;--tx:${Math.cos(angle)*dist}px;--ty:${Math.sin(angle)*dist}px;`;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 900);
+    }
+  }
+</script>
+</body>
+</html>
