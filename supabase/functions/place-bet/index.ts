@@ -1,6 +1,24 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const SYMBOLS = ['🍒','🍋','🍊','⭐','💎','7️⃣'];
+// ── SLOT GAME CONFIGURATIONS ───────────────────────────────────
+const SLOT_GAME_CONFIGS: Record<string, { symbols: string[]; payouts: Record<string, number> }> = {
+  classic: {
+    symbols: ['🍒','🍋','🍊','⭐','💎','7️⃣'],
+    payouts: { '💎': 20, '7️⃣': 10, '⭐': 5, '🍒': 5 }
+  },
+  fruit: {
+    symbols: ['🍒','🍋','🍊','🍉','🍇','🍌'],
+    payouts: { '🍇': 15, '🍉': 10, '🍊': 8, '🍋': 6, '🍌': 5, '🍒': 5 }
+  },
+  diamond: {
+    symbols: ['💎','⭐','🌟','✨','💫','🔥'],
+    payouts: { '💎': 25, '🔥': 15, '💫': 10, '✨': 8, '🌟': 6, '⭐': 5 }
+  },
+  wild: {
+    symbols: ['🤠','⭐','🦬','🌵','💰','🔫'],
+    payouts: { '🤠': 20, '💰': 15, '🦬': 10, '⭐': 8, '🌵': 6, '🔫': 5 }
+  }
+};
 
 // ── Provably fair RNG ─────────────────────────────────────────
 
@@ -16,7 +34,7 @@ async function hashSeed(seed: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
-function deriveOutcome(game: string, hex: string, amount: number) {
+function deriveOutcome(game: string, hex: string, amount: number, choice?: any) {
   const v0 = parseInt(hex.slice(0, 8), 16);
   if (game === 'coin') {
     const outcome = v0 % 2 === 0 ? 'heads' : 'tails';
@@ -27,15 +45,25 @@ function deriveOutcome(game: string, hex: string, amount: number) {
     return { outcome, win: false, delta: 0 };
   }
   if (game === 'slots') {
+    // Get slot game type from choice parameter (default to 'classic')
+    const slotType = (choice as any)?.gameType || 'classic';
+    const config = SLOT_GAME_CONFIGS[slotType] || SLOT_GAME_CONFIGS['classic'];
+    const symbols = config.symbols;
+    const symbolCount = symbols.length;
+    
     const reels = [
-      SYMBOLS[parseInt(hex.slice(0,  8), 16) % 6],
-      SYMBOLS[parseInt(hex.slice(8, 16), 16) % 6],
-      SYMBOLS[parseInt(hex.slice(16,24), 16) % 6],
+      symbols[parseInt(hex.slice(0,  8), 16) % symbolCount],
+      symbols[parseInt(hex.slice(8, 16), 16) % symbolCount],
+      symbols[parseInt(hex.slice(16,24), 16) % symbolCount],
     ];
+    
     let delta: number;
-    if (reels[0]===reels[1] && reels[1]===reels[2])
-      delta = reels[0]==='💎' ? amount*20 : reels[0]==='7️⃣' ? amount*10 : amount*5;
-    else if (reels[0]===reels[1] || reels[1]===reels[2] || reels[0]===reels[2])
+    if (reels[0]===reels[1] && reels[1]===reels[2]) {
+      // Three of a kind - use game-specific payouts
+      const symbol = reels[0];
+      const payout = config.payouts[symbol] || 5;
+      delta = amount * payout;
+    } else if (reels[0]===reels[1] || reels[1]===reels[2] || reels[0]===reels[2])
       delta = 0;
     else
       delta = -amount;
@@ -311,7 +339,7 @@ Deno.serve(async (req) => {
   const serverSeedRaw  = makeServerSeed();
   const serverSeedHash = await hashSeed(serverSeedRaw);
   const hex            = await hmac(serverSeedRaw, `${clientSeed}:${nonce}`);
-  const derived        = deriveOutcome(game, hex, amount);
+  const derived        = deriveOutcome(game, hex, amount, choice);
   const result         = applyChoice(game, derived, choice, amount);
 
   const { data: newBal, error: rpcErr } = await db.rpc('deduct_balance', { p_amount: amount });

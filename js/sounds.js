@@ -157,3 +157,145 @@ function soundMineExplode() {
     src.start();
   });
 }
+
+// ── Slot game sound themes ────────────────────────────────────
+
+// Classic slots sound (traditional mechanical)
+function soundClassicSpin() {
+  _play(ac => {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = 'square'; o.frequency.value = 200;
+    g.gain.setValueAtTime(0.08, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.1);
+    o.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime + 0.1);
+  });
+}
+
+// Fruit slots sound (playful, bouncy)
+function soundFruitSpin() {
+  _play(ac => {
+    [400, 600, 800].forEach((freq, i) => {
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = 'sine'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0, ac.currentTime + i*0.05);
+      g.gain.linearRampToValueAtTime(0.1, ac.currentTime + i*0.05 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + i*0.05 + 0.15);
+      o.connect(g); g.connect(ac.destination);
+      o.start(ac.currentTime + i*0.05);
+      o.stop(ac.currentTime + i*0.05 + 0.15);
+    });
+  });
+}
+
+// Diamond slots sound (luxurious, shimmering)
+function soundDiamondSpin() {
+  _play(ac => {
+    [800, 1200, 1600, 2000].forEach((freq, i) => {
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = 'sine'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0, ac.currentTime + i*0.06);
+      g.gain.linearRampToValueAtTime(0.06, ac.currentTime + i*0.06 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + i*0.06 + 0.3);
+      o.connect(g); g.connect(ac.destination);
+      o.start(ac.currentTime + i*0.06);
+      o.stop(ac.currentTime + i*0.06 + 0.3);
+    });
+  });
+}
+
+// Wild West slots sound (twangy guitar-like)
+function soundWesternSpin() {
+  _play(ac => {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = 'sawtooth'; o.frequency.value = 150;
+    o.frequency.linearRampToValueAtTime(300, ac.currentTime + 0.15);
+    g.gain.setValueAtTime(0.12, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.2);
+    o.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime + 0.2);
+  });
+}
+
+// Bonus activation sound (exciting chime)
+function soundBonusActivate() {
+  _play(ac => {
+    [523, 659, 784, 1047, 1319].forEach((freq, i) => {
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = 'sine'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0, ac.currentTime + i*0.07);
+      g.gain.linearRampToValueAtTime(0.15, ac.currentTime + i*0.07 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + i*0.07 + 0.5);
+      o.connect(g); g.connect(ac.destination);
+      o.start(ac.currentTime + i*0.07);
+      o.stop(ac.currentTime + i*0.07 + 0.5);
+    });
+  });
+}
+
+// Free spins awarded sound
+function soundFreeSpins() {
+  _play(ac => {
+    [400, 500, 600, 700, 800].forEach((freq, i) => {
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = 'triangle'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0, ac.currentTime + i*0.08);
+      g.gain.linearRampToValueAtTime(0.12, ac.currentTime + i*0.08 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + i*0.08 + 0.4);
+      o.connect(g); g.connect(ac.destination);
+      o.start(ac.currentTime + i*0.08);
+      o.stop(ac.currentTime + i*0.08 + 0.4);
+    });
+  });
+}
+
+// Multiplier increase sound
+function soundMultiplier() {
+  _play(ac => {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(400, ac.currentTime);
+    o.frequency.exponentialRampToValueAtTime(1200, ac.currentTime + 0.3);
+    g.gain.setValueAtTime(0.1, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.3);
+    o.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime + 0.3);
+  });
+}
+
+// Wild substitution sound
+function soundWildSubstitute() {
+  _play(ac => {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = 'sine'; o.frequency.value = 600;
+    o.frequency.linearRampToValueAtTime(900, ac.currentTime + 0.1);
+    g.gain.setValueAtTime(0.1, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.15);
+    o.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime + 0.15);
+  });
+}
+
+// Bounty bonus sound (Western-style)
+function soundBountyBonus() {
+  _play(ac => {
+    [300, 400, 500, 600, 800].forEach((freq, i) => {
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = 'square'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0, ac.currentTime + i*0.06);
+      g.gain.linearRampToValueAtTime(0.1, ac.currentTime + i*0.06 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + i*0.06 + 0.3);
+      o.connect(g); g.connect(ac.destination);
+      o.start(ac.currentTime + i*0.06);
+      o.stop(ac.currentTime + i*0.06 + 0.3);
+    });
+  });
+}

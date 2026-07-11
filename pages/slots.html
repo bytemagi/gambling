@@ -47,8 +47,30 @@
     <p>Spin the reels · Match symbols · Hit the Jackpot</p>
   </div>
 
+  <div class="game-selector">
+    <div class="game-selector-title">Choose Your Game</div>
+    <div class="game-options">
+      <div class="game-option active" data-game="classic" onclick="selectGame('classic')">
+        <div class="game-option-icon">🎰</div>
+        <div class="game-option-name">Classic 7s</div>
+      </div>
+      <div class="game-option" data-game="fruit" onclick="selectGame('fruit')">
+        <div class="game-option-icon">🍒</div>
+        <div class="game-option-name">Fruit Fiesta</div>
+      </div>
+      <div class="game-option" data-game="diamond" onclick="selectGame('diamond')">
+        <div class="game-option-icon">💎</div>
+        <div class="game-option-name">Diamond Rush</div>
+      </div>
+      <div class="game-option" data-game="wild" onclick="selectGame('wild')">
+        <div class="game-option-icon">🤠</div>
+        <div class="game-option-name">Wild West</div>
+      </div>
+    </div>
+  </div>
+
   <div class="machine">
-    <div class="machine-top">✦ Fuckitt's Funhouse Slots ✦</div>
+    <div class="machine-top" id="machineTitle">✦ Fuckitt's Funhouse Slots ✦</div>
     <div class="reels-container">
       <div class="reel-col">
         <div class="reel-label">Reel 1</div>

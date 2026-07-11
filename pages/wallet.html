@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wallet · Fuckitt's Funhouse</title>
 <link rel="stylesheet" href="../css/shared.css">
+<script src="https://www.paypal.com/sdk/js?client-id=AWOiIHnjt5YkwFvto4f6dNsPItUUrdxGs8lXHUUgrAPVNlft9kTxM17aqKJVMfuq9SI_SIuf5iJHwZgq&currency=USD"></script>
 <style>
 .page { max-width:900px; margin:0 auto; padding:22px 16px 48px; }
 
@@ -145,6 +146,33 @@
   border-radius:999px;
   padding:4px 9px;
   font-size:0.72rem;
+}
+
+/* ── WALLET ICON PROMINENCE ── */
+.header-nav .nav-link.active {
+  border-bottom: 3px solid var(--gold) !important;
+  padding-bottom: 8px;
+}
+.header-nav .nav-link {
+  transition: all 0.2s ease;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+.header-nav .nav-link:hover {
+  background: rgba(212, 175, 55, 0.1);
+  border-color: var(--gold);
+}
+
+/* Highlight wallet in nav */
+.header-nav .nav-link[href="wallet.html"] {
+  font-weight: 600;
+  color: var(--gold) !important;
+  animation: pulse-wallet 2s infinite;
+}
+
+@keyframes pulse-wallet {
+  0%, 100% { text-shadow: 0 0 0 rgba(212, 175, 55, 0.3); }
+  50% { text-shadow: 0 0 10px rgba(212, 175, 55, 0.6); }
 }
 
 /* ── DEPOSIT MODAL ── */
@@ -297,14 +325,63 @@
     <h2>💳 Add Funds</h2>
     <div class="modal-sub">Choose a payment method to top up your balance.</div>
 
-    <div class="deposit-method" onclick="showPaymentInstructions('crypto')">
-      <span class="deposit-method-icon">₿</span>
+    <div class="deposit-method" onclick="openPayPalDeposit('paypal-small')">
+      <span class="deposit-method-icon">💳</span>
       <div class="deposit-method-info">
-        <strong>Cryptocurrency</strong>
-        <span>Bitcoin · Ethereum · USDC · Instant confirmation</span>
+        <strong>PayPal - $5.00</strong>
+        <span>Get 500 points instantly</span>
       </div>
       <span class="deposit-method-arrow">›</span>
     </div>
+
+    <div class="deposit-method" onclick="openPayPalDeposit('paypal-medium')">
+      <span class="deposit-method-icon">💳</span>
+      <div class="deposit-method-info">
+        <strong>PayPal - $20.00</strong>
+        <span>Get 2000 points instantly</span>
+      </div>
+      <span class="deposit-method-arrow">›</span>
+    </div>
+
+    <div class="deposit-method" onclick="openPayPalDeposit('paypal-large')">
+      <span class="deposit-method-icon">💳</span>
+      <div class="deposit-method-info">
+        <strong>PayPal - $50.00</strong>
+        <span>Get 5000 points instantly</span>
+      </div>
+      <span class="deposit-method-arrow">›</span>
+    </div>
+
+    <div id="paypal-button-container" style="display:none; margin:16px 0;"></div>
+
+    <div class="deposit-method" onclick="openCryptoDeposit('bitcoin')">
+      <span class="deposit-method-icon">₿</span>
+      <div class="deposit-method-info">
+        <strong>Bitcoin</strong>
+        <span>Deposit BTC · Instant settlement</span>
+      </div>
+      <span class="deposit-method-arrow">›</span>
+    </div>
+
+    <div class="deposit-method" onclick="openCryptoDeposit('ethereum')">
+      <span class="deposit-method-icon">Ξ</span>
+      <div class="deposit-method-info">
+        <strong>Ethereum</strong>
+        <span>Deposit ETH · Instant settlement</span>
+      </div>
+      <span class="deposit-method-arrow">›</span>
+    </div>
+
+    <div class="deposit-method" onclick="openCryptoDeposit('usdc')">
+      <span class="deposit-method-icon">💵</span>
+      <div class="deposit-method-info">
+        <strong>USDC Stablecoin</strong>
+        <span>Deposit USDC · 1:1 with USD</span>
+      </div>
+      <span class="deposit-method-arrow">›</span>
+    </div>
+
+    <div id="crypto-deposit-container" style="display:none; margin:16px 0; padding:16px; border:1px solid var(--border); border-radius:10px; background:#0a0f1a;"></div>
 
     <div class="deposit-method" onclick="showPaymentInstructions('bank')">
       <span class="deposit-method-icon">🏦</span>
@@ -390,6 +467,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/shared.js"></script>
+<script src="../js/paypal-integration.js"></script>
 <script>
 // guardPage() checks auth + calls initNav() internally; must await before loading data
 (async () => {
@@ -498,6 +576,148 @@ function showPaymentInstructions(method) {
     el.innerHTML = msgs[method];
     el.style.display = 'block';
   }
+}
+
+// ── PayPal Integration ──
+const PAYPAL_AMOUNTS = {
+  'paypal-small': 500,    // $5.00 in cents
+  'paypal-medium': 2000,  // $20.00 in cents
+  'paypal-large': 5000,   // $50.00 in cents
+};
+
+async function openPayPalDeposit(depositType) {
+  const amountInCents = PAYPAL_AMOUNTS[depositType];
+  if (!amountInCents) {
+    console.error('Invalid deposit type');
+    return;
+  }
+
+  // Show PayPal button container
+  const container = document.getElementById('paypal-button-container');
+  container.style.display = 'block';
+  container.innerHTML = ''; // Clear previous buttons
+
+  try {
+    await PayPalIntegration.createPayPalButton('paypal-button-container', amountInCents);
+  } catch (error) {
+    console.error('Error creating PayPal button:', error);
+    showErrorAlert('Failed to initialize PayPal. Please try again.');
+  }
+}
+
+function showErrorAlert(message) {
+  const alert = document.createElement('div');
+  alert.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #c0392b;
+    color: white;
+    padding: 16px 20px;
+    border-radius: 8px;
+    z-index: 9999;
+    font-size: 0.9rem;
+  `;
+  alert.textContent = message;
+  document.body.appendChild(alert);
+  setTimeout(() => alert.remove(), 5000);
+}
+
+// ── Crypto Deposit Integration ──
+async function openCryptoDeposit(cryptoType) {
+  const container = document.getElementById('crypto-deposit-container');
+  
+  const cryptoInfo = {
+    bitcoin: {
+      symbol: 'BTC',
+      icon: '₿',
+      address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh', // Example address - replace with your actual address
+      amounts: [
+        { value: '0.0001', usd: '$5' },
+        { value: '0.0004', usd: '$20' },
+        { value: '0.001', usd: '$50' }
+      ],
+      network: 'Bitcoin Network',
+      confirmations: '1 confirmation (~10 min)'
+    },
+    ethereum: {
+      symbol: 'ETH',
+      icon: 'Ξ',
+      address: '0x742d35Cc6634C0532925a3b844Bc9e7595f1d0d5', // Example address - replace with your actual address
+      amounts: [
+        { value: '0.003', usd: '$5' },
+        { value: '0.013', usd: '$20' },
+        { value: '0.032', usd: '$50' }
+      ],
+      network: 'Ethereum Network',
+      confirmations: '12 confirmations (~3 min)'
+    },
+    usdc: {
+      symbol: 'USDC',
+      icon: '💵',
+      address: '0x742d35Cc6634C0532925a3b844Bc9e7595f1d0d5', // Example address - replace with your actual address
+      amounts: [
+        { value: '5', usd: '$5' },
+        { value: '20', usd: '$20' },
+        { value: '50', usd: '$50' }
+      ],
+      network: 'Ethereum Network (ERC-20)',
+      confirmations: '12 confirmations (~3 min)'
+    }
+  };
+
+  const crypto = cryptoInfo[cryptoType];
+  if (!crypto) return;
+
+  container.style.display = 'block';
+  container.innerHTML = `
+    <div style="margin-bottom: 12px;">
+      <h4 style="color: var(--gold); margin-bottom: 8px;">${crypto.icon} ${crypto.symbol} Deposit Instructions</h4>
+      <div style="font-size: 0.85rem; color: var(--muted); line-height: 1.6;">
+        <p><strong>Send exactly one of these amounts:</strong></p>
+        <div style="display: grid; gap: 6px; margin: 8px 0;">
+          ${crypto.amounts.map(amt => `
+            <div style="background: #0d141e; padding: 8px 12px; border-radius: 6px; display: flex; justify-content: space-between;">
+              <span><code style="color: var(--green);">${amt.value} ${crypto.symbol}</code></span>
+              <span style="color: var(--muted);">${amt.usd}</span>
+            </div>
+          `).join('')}
+        </div>
+        <p style="margin-top: 12px;"><strong>Send to this address:</strong></p>
+        <div style="background: #0d141e; padding: 12px; border-radius: 6px; word-break: break-all; margin: 8px 0; border: 1px solid var(--border); position: relative;">
+          <code style="color: var(--text); font-size: 0.75rem;">${crypto.address}</code>
+          <button style="position: absolute; top: 8px; right: 8px; background: var(--gold); color: #000; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem;" onclick="copyToClipboard('${crypto.address}')">Copy</button>
+        </div>
+        <p style="margin-top: 12px; padding: 8px 12px; background: rgba(212, 175, 55, 0.1); border-radius: 6px; border-left: 3px solid var(--gold);">
+          ⏱️ <strong>Confirmation time:</strong> ${crypto.confirmations}<br>
+          Your balance will update automatically after payment confirms on the ${crypto.network}
+        </p>
+        <p style="margin-top: 12px; color: #999; font-size: 0.8rem;">
+          ℹ️ <strong>Important:</strong> Always double-check the address. Payments sent to wrong addresses cannot be recovered.
+        </p>
+      </div>
+    </div>
+  `;
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const alert = document.createElement('div');
+    alert.textContent = '✓ Copied to clipboard';
+    alert.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--green);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 6px;
+      z-index: 9999;
+      font-size: 0.9rem;
+    `;
+    document.body.appendChild(alert);
+    setTimeout(() => alert.remove(), 2000);
+  });
 }
 </script>
 </body>

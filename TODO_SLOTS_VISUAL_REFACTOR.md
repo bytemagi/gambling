@@ -19,3 +19,4 @@
 - [ ] Add win highlighting on specific reels
 - [ ] Upgrade paytable + symbol art presentation
 - [ ] Make layout more “casino-grade” and responsive
+
