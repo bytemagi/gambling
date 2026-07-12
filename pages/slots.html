@@ -66,6 +66,10 @@
         <div class="game-option-icon">🤠</div>
         <div class="game-option-name">Wild West</div>
       </div>
+      <div class="game-option" data-game="neon" onclick="selectGame('neon')">
+        <div class="game-option-icon">🌃</div>
+        <div class="game-option-name">Neon Nights</div>
+      </div>
     </div>
   </div>
 
@@ -119,6 +123,10 @@
       <div class="qb" onclick="setQuickBet(50)">$50</div>
       <div class="qb" onclick="halfBet()">½</div>
       <div class="qb" onclick="doubleBet()">2×</div>
+    </div>
+    <div class="free-spin-row">
+      <span>Free Spins: <strong id="freeSpinCount">0</strong></span>
+      <button class="btn-ghost btn-free-spin" id="btnFreeSpin" onclick="toggleFreeSpin()" disabled>Use Free Spin</button>
     </div>
     <button class="btn-spin" id="btnSpin" onclick="spin()">S P I N</button>
   </div>

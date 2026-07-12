@@ -819,6 +819,10 @@
         <input id="loginPass" type="password" placeholder="Enter your password" autocomplete="current-password"
           onkeydown="if(event.key==='Enter')submitLogin()">
       </div>
+      <div class="login-field">
+        <label for="loginReferral">Referral Code (optional)</label>
+        <input id="loginReferral" type="text" placeholder="Enter code if you have one" autocomplete="off">
+      </div>
       <div id="loginErr"></div>
       <button class="btn-gold" onclick="submitLogin()">🚀 Enter the Funhouse</button>
       <p class="login-note">
@@ -1369,10 +1373,11 @@ isLoggedIn().then(loggedIn => { if (loggedIn) showLobby(); });
 async function submitLogin() {
   const u   = document.getElementById('loginUser').value.trim();
   const p   = document.getElementById('loginPass').value;
+  const referralCode = document.getElementById('loginReferral').value.trim();
   const err = document.getElementById('loginErr');
   if (!u || !p) { err.textContent = '⚠️ Fill in all fields'; return; }
   err.textContent = 'Signing in…';
-  const res = await apiLogin(u, p);
+  const res = await apiLogin(u, p, referralCode);
   if (res.ok) { showLobby(); updateBal(res.balance); }
   else err.textContent = '❌ ' + res.error;
 }

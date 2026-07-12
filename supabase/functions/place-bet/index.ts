@@ -18,6 +18,47 @@ const SLOT_GAME_CONFIGS: Record<string, { symbols: string[]; payouts: Record<str
     symbols: ['🤠','⭐','🦬','🌵','💰','🔫'],
     payouts: { '🤠': 20, '💰': 15, '🦬': 10, '⭐': 8, '🌵': 6, '🔫': 5 }
   }
+  ,
+  // ── New themed slot games (added 3 themes) ─────────────────────────
+  neon: {
+    // Neon Nights — high-volatility city-night themed slots with wilds & scatter focus
+    symbols: ['🕶️','🌃','💎','🎧','🔋','🧊','★'],
+    payouts: {
+      '💎': 50, // big jackpot symbol
+      '★': 25,
+      '🎧': 12,
+      '🕶️': 10,
+      '🌃': 8,
+      '🔋': 6,
+      '🧊': 5
+    }
+  },
+  treasure: {
+    // Treasure Quest — mid-volatility pirate/adventure theme with scatter bonus
+    symbols: ['🏴‍☠️','🗺️','🪙','💰','⚓','🦜','🔑'],
+    payouts: {
+      '💰': 40,
+      '🪙': 20,
+      '🗺️': 12,
+      '🏴‍☠️': 10,
+      '⚓': 8,
+      '🦜': 6,
+      '🔑': 5
+    }
+  },
+  pharaoh: {
+    // Pharaoh's Riches — ancient Egypt theme, lower volatility with many small wins and expanding wilds
+    symbols: ['🪙','📜','🦂','🪆','👑','🔺','🪨'],
+    payouts: {
+      '👑': 30,
+      '🔺': 18,
+      '🪆': 12,
+      '🦂': 10,
+      '📜': 8,
+      '🪙': 6,
+      '🪨': 4
+    }
+  }
 };
 
 // ── Provably fair RNG ─────────────────────────────────────────
@@ -342,12 +383,44 @@ Deno.serve(async (req) => {
   const derived        = deriveOutcome(game, hex, amount, choice);
   const result         = applyChoice(game, derived, choice, amount);
 
-  const { data: newBal, error: rpcErr } = await db.rpc('deduct_balance', { p_amount: amount });
-  if (rpcErr) return new Response(JSON.stringify({ error: rpcErr.message }), { status: 400, headers: commonHeaders() });
+  const useFreeSpin = Boolean((choice as any)?.useFreeSpin);
+  let freeSpinsRemaining = 0;
+  let payout   = result.delta + amount;
+  let freeSpinsAwarded = 0;
+  let freeSpinMultiplier = 1;
 
-  const payout   = result.delta + amount;
-  const finalBal = (newBal as number) + payout;
+  if (useFreeSpin) {
+    const { data: freeSpinProfile } = await db.from('profiles').select('free_spins').single();
+    const currentFreeSpins = Number(freeSpinProfile?.free_spins ?? 0);
+    if (!Number.isFinite(currentFreeSpins) || currentFreeSpins <= 0) {
+      return new Response(JSON.stringify({ error: 'No free spins remaining' }), { status: 400, headers: commonHeaders() });
+    }
+    freeSpinsRemaining = currentFreeSpins - 1;
+    await db.from('profiles').update({ free_spins: freeSpinsRemaining }).eq('id', user.id);
+  } else {
+    const { data: newBal, error: rpcErr } = await db.rpc('deduct_balance', { p_amount: amount });
+    if (rpcErr) return new Response(JSON.stringify({ error: rpcErr.message }), { status: 400, headers: commonHeaders() });
+  }
+
+  if (game === 'slots' && choice?.gameType === 'neon') {
+    const isNeonBonus = result.outcome?.[0] === '★' && result.outcome?.[1] === '★' && result.outcome?.[2] === '★';
+    if (isNeonBonus) {
+      freeSpinsAwarded = 3;
+      freeSpinMultiplier = 2;
+      payout = Math.round(payout * 1.5);
+    }
+  }
+
+  const { data: balanceProfile } = await db.from('profiles').select('balance').single();
+  const currentBalance = Number(balanceProfile?.balance ?? 0);
+  const finalBal = currentBalance + payout;
   if (payout > 0) await db.rpc('credit_balance', { p_amount: payout });
+
+  if (freeSpinsAwarded > 0) {
+    const { data: currentProfile } = await db.from('profiles').select('free_spins').single();
+    const updatedRemaining = Number(currentProfile?.free_spins ?? 0) + freeSpinsAwarded;
+    await db.from('profiles').update({ free_spins: updatedRemaining }).eq('id', user.id);
+  }
 
   await db.from('bets').insert({
     user_id:          user.id,
@@ -366,6 +439,9 @@ Deno.serve(async (req) => {
     ok: true,
     ...result,
     balance: finalBal,
+    freeSpinsAwarded,
+    freeSpinMultiplier,
+    freeSpinsRemaining: useFreeSpin ? freeSpinsRemaining : (freeSpinsAwarded > 0 ? freeSpinsAwarded : undefined),
     serverSeed: serverSeedRaw,
     serverSeedHash,
     clientSeed,

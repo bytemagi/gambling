@@ -23,8 +23,9 @@ function escapeHtml(s) {
 
 // ── Auth ──────────────────────────────────────────────────────
 
-async function apiLogin(username, password) {
+async function apiLogin(username, password, referralCode = '') {
   const email = username.toLowerCase() + '@funhouse.local';
+  const normalizedReferralCode = (referralCode || '').trim().toUpperCase();
   const { data, error } = await db.auth.signInWithPassword({ email, password });
 
   if (!error) {
@@ -35,11 +36,32 @@ async function apiLogin(username, password) {
 
   // Fix #3 — only auto-register when the account genuinely doesn't exist
   if (error.message.toLowerCase().includes('invalid login credentials')) {
-    const { error: signUpError } = await db.auth.signUp({
+    const { data: signUpData, error: signUpError } = await db.auth.signUp({
       email, password,
-      options: { data: { username } }
+      options: { data: { username, referral_code: normalizedReferralCode } }
     });
     if (signUpError) return { ok: false, error: signUpError.message };
+
+    const signInResult = await db.auth.signInWithPassword({ email, password });
+    if (!signInResult.error && signInResult.data?.session?.access_token) {
+      try {
+        await fetch(`${SUPABASE_URL}/functions/v1/handle-signup-bonus`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${signInResult.data.session.access_token}`,
+          },
+          body: JSON.stringify({
+            userId: signInResult.data.user?.id || signUpData?.user?.id,
+            referralCode: normalizedReferralCode,
+            username,
+          }),
+        });
+      } catch (bonusErr) {
+        console.warn('Referral bonus processing failed:', bonusErr);
+      }
+    }
+
     currentBalance = 100;
     return { ok: true, balance: 100, username };
   }
@@ -64,7 +86,7 @@ async function getSession() {
 async function fetchProfile() {
   const { data, error } = await db
     .from('profiles')
-    .select('username, balance')
+    .select('username, balance, free_spins, referral_code, referred_by')
     .single();
   if (error) console.error('fetchProfile:', error);
   return data;
@@ -85,7 +107,7 @@ async function apiPlaceBet(game, amount, choice, providedClientSeed = null, prov
 
     // Validate balance before placing bet
     const balance = await apiGetBalance();
-    if (amount > balance) {
+    if (!(choice && choice.useFreeSpin) && amount > balance) {
       return { ok: false, error: 'Insufficient balance' };
     }
 
@@ -125,6 +147,12 @@ async function apiPlaceBet(game, amount, choice, providedClientSeed = null, prov
     }
 
     currentBalance = data.balance;
+    if (typeof window !== 'undefined' && typeof data.freeSpinsRemaining === 'number') {
+      window.currentFreeSpins = Number(data.freeSpinsRemaining);
+      if (typeof window.updateFreeSpinDisplay === 'function') {
+        window.updateFreeSpinDisplay();
+      }
+    }
     return { ok: true, ...data };
   } catch (err) {
     return { ok: false, error: 'Unexpected error while placing bet' };
@@ -162,15 +190,16 @@ async function initNav() {
   const profile = await fetchProfile();
   if (!profile) return;
   currentBalance = profile.balance;
+  if (typeof window !== 'undefined') {
+    window.currentFreeSpins = Number(profile.free_spins ?? 0);
+    if (typeof window.updateFreeSpinDisplay === 'function') {
+      window.updateFreeSpinDisplay();
+    }
+  }
   const ul  = document.getElementById('userLabel');
   const bal = document.getElementById('bal');
   if (ul)  ul.textContent  = profile.username;
   if (bal) bal.textContent = profile.balance;
-}
-
-async function doLogout() {
-  await apiLogout();
-  window.location.href = 'index.html';
 }
 
 function updateBal(n) {

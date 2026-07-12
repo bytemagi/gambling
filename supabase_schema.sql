@@ -8,6 +8,7 @@ create table if not exists public.profiles (
   id         uuid references auth.users(id) on delete cascade primary key,
   username   text unique not null,
   balance    integer not null default 100,
+  free_spins integer not null default 0,
   created_at timestamptz default now()
 );
 

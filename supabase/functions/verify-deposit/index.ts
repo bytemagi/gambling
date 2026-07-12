@@ -141,6 +141,9 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    const bonusAmount = amountValue * 0.10;
+    const creditedAmount = Math.round(amountValue + bonusAmount);
+
     // Insert deposit record
     const { error: depositError, data: deposit } = await supabase
       .from('deposits')
@@ -152,7 +155,7 @@ Deno.serve(async (req: Request) => {
         paypal_payer_id: payerId,
         status: 'completed',
         completed_at: new Date().toISOString(),
-        metadata: { order: capturedOrder },
+        metadata: { order: capturedOrder, bonus_amount: Math.round(bonusAmount) },
       })
       .select()
       .single();
@@ -164,9 +167,9 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Credit user balance
+    // Credit user balance with a 10% crypto-like deposit bonus
     const { data: updatedProfile, error: creditError } = await supabase
-      .rpc('credit_balance', { p_user_id: userId, p_amount: amountValue });
+      .rpc('credit_balance', { p_user_id: userId, p_amount: creditedAmount });
 
     if (creditError) {
       return new Response(JSON.stringify({ error: 'Failed to credit balance' }), {
@@ -179,7 +182,8 @@ Deno.serve(async (req: Request) => {
       JSON.stringify({
         success: true,
         deposit,
-        newBalance: profile.balance + amountValue,
+        bonusAmount: Math.round(bonusAmount),
+        newBalance: profile.balance + creditedAmount,
       }),
       {
         status: 200,

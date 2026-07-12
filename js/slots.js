@@ -68,6 +68,26 @@ const GAME_CONFIGS = {
 };
 
 let currentGame = 'classic';
+let useFreeSpin = false;
+
+function updateFreeSpinDisplay() {
+  const countEl = document.getElementById('freeSpinCount');
+  const buttonEl = document.getElementById('btnFreeSpin');
+  const available = Number(window.currentFreeSpins || 0);
+  if (countEl) countEl.textContent = String(available);
+  if (buttonEl) {
+    buttonEl.disabled = available <= 0;
+    buttonEl.textContent = useFreeSpin ? 'Using Free Spin' : 'Use Free Spin';
+    buttonEl.style.opacity = available <= 0 ? '0.6' : '1';
+  }
+}
+
+function toggleFreeSpin() {
+  const available = Number(window.currentFreeSpins || 0);
+  if (available <= 0) return;
+  useFreeSpin = !useFreeSpin;
+  updateFreeSpinDisplay();
+}
 
 // ── GAME SELECTION ─────────────────────────────────────────────
 function selectGame(gameType) {
@@ -172,7 +192,7 @@ async function spin() {
   playGameSound('spin');
   
   const [res] = await Promise.all([
-    apiPlaceBet('slots', amount, { gameType: currentGame }),
+    apiPlaceBet('slots', amount, { gameType: currentGame, useFreeSpin }),
     new Promise(r => setTimeout(r, 1400))
   ]);
 
@@ -203,6 +223,12 @@ async function spin() {
     strip.style.transform = '';
   });
 
+  if (typeof res.freeSpinsRemaining === 'number') {
+    window.currentFreeSpins = Number(res.freeSpinsRemaining);
+  } else if (useFreeSpin && Number(window.currentFreeSpins || 0) > 0) {
+    window.currentFreeSpins = Math.max(0, Number(window.currentFreeSpins || 0) - 1);
+  }
+  updateFreeSpinDisplay();
   updateBal(res.balance);
 
   const gain = Math.abs(res.delta);
