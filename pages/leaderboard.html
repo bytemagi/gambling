@@ -137,6 +137,7 @@
 
     <nav class="header-nav">
       <a class="nav-link" href="index.html"><span class="nav-icon">🏠</span> Lobby</a>
+      <a class="nav-link" href="fish.html"><span class="nav-icon">🐟</span> Fish Frenzy <span class="nav-badge new">NEW</span></a>
       <a class="nav-link" href="slots.html"><span class="nav-icon">🎰</span> Slots</a>
       <a class="nav-link" href="crash.html"><span class="nav-icon">🚀</span> Crash</a>
       <a class="nav-link" href="mines.html"><span class="nav-icon">💣</span> Mines</a>
@@ -249,6 +250,7 @@
 
   // guardPage() already calls initNav() internally — fetch profile for username only
   guardPage().then(async () => {
+    initSoundToggle();
     const profile = await fetchProfile();
     myUsername = profile?.username ?? '';
     loadTab('profit');

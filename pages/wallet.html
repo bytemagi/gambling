@@ -221,6 +221,7 @@
     </a>
     <nav class="header-nav">
       <a class="nav-link" href="index.html"><span class="nav-icon">🏠</span> Lobby</a>
+      <a class="nav-link" href="fish.html"><span class="nav-icon">🐟</span> Fish Frenzy <span class="nav-badge new">NEW</span></a>
       <a class="nav-link" href="slots.html"><span class="nav-icon">🎰</span> Slots</a>
       <a class="nav-link" href="crash.html"><span class="nav-icon">🚀</span> Crash</a>
       <a class="nav-link" href="mines.html"><span class="nav-icon">💣</span> Mines</a>
@@ -472,6 +473,7 @@
 // guardPage() checks auth + calls initNav() internally; must await before loading data
 (async () => {
   await guardPage();
+  initSoundToggle();
   await refreshWallet();
 })();
 
@@ -655,7 +657,7 @@ async function openCryptoDeposit(cryptoType) {
     usdc: {
       symbol: 'USDC',
       icon: '💵',
-      address: '0x54DD4561Bb354208e67947B3a401De0a7De68046 ', // Example address - replace with your actual address
+      address: '0x54DD4561Bb354208e67947B3a401De0a7De68046',
       amounts: [
         { value: '5', usd: '$5' },
         { value: '20', usd: '$20' },

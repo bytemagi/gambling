@@ -1,5 +1,10 @@
 # Secrets — never commit real keys
 shared.js.bak
+.env
+.env.local
+.env.*.local
+supabase/.temp/
+supabase/functions/**/.env.local
 
 # OS
 .DS_Store
@@ -8,3 +13,6 @@ Thumbs.db
 # Editor
 .vscode/
 *.swp
+
+# Node
+node_modules/

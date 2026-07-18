@@ -99,6 +99,7 @@
     </a>
     <nav class="header-nav">
       <a class="nav-link" href="index.html"><span class="nav-icon">🏠</span> Lobby</a>
+      <a class="nav-link" href="fish.html"><span class="nav-icon">🐟</span> Fish Frenzy <span class="nav-badge new">NEW</span></a>
       <a class="nav-link" href="slots.html"><span class="nav-icon">🎰</span> Slots</a>
       <a class="nav-link" href="crash.html"><span class="nav-icon">🚀</span> Crash</a>
       <a class="nav-link" href="mines.html"><span class="nav-icon">💣</span> Mines</a>
@@ -190,7 +191,8 @@
 <script src="../js/shared.js"></script>
 <script src="../js/provably-fair.js"></script>
 <script>
-  guardPage(); // guardPage() calls initNav() internally — no need to call it again
+  guardPage();
+  initSoundToggle();
 
   const ICONS  = { coin:'🪙', dice:'🎲', slots:'🎰', crash:'🚀', mines:'💣' };
   const PAGE_SIZE = 20;

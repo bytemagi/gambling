@@ -62,8 +62,11 @@ async function apiLogin(username, password, referralCode = '') {
       }
     }
 
-    currentBalance = 100;
-    return { ok: true, balance: 100, username };
+    // Wait a moment for the edge function to complete, then fetch actual balance
+    await new Promise(r => setTimeout(r, 500));
+    const postProfile = await fetchProfile();
+    currentBalance = postProfile?.balance ?? 100;
+    return { ok: true, balance: currentBalance, username };
   }
 
   return { ok: false, error: error.message };
@@ -71,6 +74,10 @@ async function apiLogin(username, password, referralCode = '') {
 
 async function apiLogout() {
   await db.auth.signOut();
+}
+
+function doLogout() {
+  apiLogout().then(() => { window.location.href = 'index.html'; });
 }
 
 async function isLoggedIn() {
@@ -146,13 +153,13 @@ async function apiPlaceBet(game, amount, choice, providedClientSeed = null, prov
       return { ok: false, error: 'Invalid server response' };
     }
 
-    currentBalance = data.balance;
-    if (typeof window !== 'undefined' && typeof data.freeSpinsRemaining === 'number') {
-      window.currentFreeSpins = Number(data.freeSpinsRemaining);
-      if (typeof window.updateFreeSpinDisplay === 'function') {
-        window.updateFreeSpinDisplay();
-      }
+  currentBalance = data.balance;
+  if (typeof window !== 'undefined' && typeof data.freeSpinsRemaining === 'number') {
+    localStorage.setItem('freeSpins', String(data.freeSpinsRemaining));
+    if (typeof window.updateFreeSpinDisplay === 'function') {
+      window.updateFreeSpinDisplay();
     }
+  }
     return { ok: true, ...data };
   } catch (err) {
     return { ok: false, error: 'Unexpected error while placing bet' };
@@ -191,7 +198,7 @@ async function initNav() {
   if (!profile) return;
   currentBalance = profile.balance;
   if (typeof window !== 'undefined') {
-    window.currentFreeSpins = Number(profile.free_spins ?? 0);
+    localStorage.setItem('freeSpins', String(profile.free_spins ?? 0));
     if (typeof window.updateFreeSpinDisplay === 'function') {
       window.updateFreeSpinDisplay();
     }
@@ -219,5 +226,74 @@ function setButtonLoading(btnId, loading, originalText) {
     btn.textContent = 'Loading...';
   } else {
     btn.textContent = originalText || btn.dataset.originalText || btn.textContent;
+  }
+}
+
+// ── Shared bet helpers (eliminates duplication across game pages) ──
+
+function setQuickBet(n) {
+  const b = currentBalance || n;
+  document.getElementById('betAmt').value = Math.min(n, b);
+  if (typeof updatePotential === 'function') updatePotential();
+}
+
+function halfBet() {
+  const el = document.getElementById('betAmt');
+  el.value = Math.max(1, Math.floor(parseInt(el.value || 1) / 2));
+  if (typeof updatePotential === 'function') updatePotential();
+}
+
+function doubleBet() {
+  const b = currentBalance || 99999;
+  const el = document.getElementById('betAmt');
+  el.value = Math.min(parseInt(el.value || 1) * 2, b);
+  if (typeof updatePotential === 'function') updatePotential();
+}
+
+// ── Shared particles ──────────────────────────────────────────
+
+function spawnParticles(count) {
+  const countVal = count || 20;
+  const emojis = ['💎', '⭐', '🎉', '✨', '💰', '🎊', '🔥'];
+  const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+  for (let i = 0; i < countVal; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const angle = Math.random() * Math.PI * 2, dist = 100 + Math.random() * 200;
+    p.style.cssText = `left:${cx}px;top:${cy}px;--tx:${Math.cos(angle) * dist}px;--ty:${Math.sin(angle) * dist}px;`;
+    p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1100);
+  }
+}
+
+// ── Sound toggle (global, persisted in localStorage) ──────────
+
+let soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+
+function initSoundToggle() {
+  if (typeof document === 'undefined') return;
+  const existing = document.getElementById('soundToggle');
+  if (existing) {
+    existing.textContent = soundEnabled ? '🔊' : '🔇';
+    return;
+  }
+  const btn = document.createElement('button');
+  btn.id = 'soundToggle';
+  btn.title = 'Toggle Sound';
+  btn.setAttribute('aria-label', 'Toggle sound');
+  btn.textContent = soundEnabled ? '🔊' : '🔇';
+  btn.onclick = toggleSound;
+  document.body.appendChild(btn);
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  localStorage.setItem('soundEnabled', soundEnabled);
+  const btn = document.getElementById('soundToggle');
+  if (btn) {
+    btn.textContent = soundEnabled ? '🔊' : '🔇';
+    btn.style.transform = 'scale(1.25)';
+    setTimeout(() => btn.style.transform = '', 200);
   }
 }

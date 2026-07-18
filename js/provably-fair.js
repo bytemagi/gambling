@@ -46,13 +46,13 @@ function incrementNonce() {
 // ── Verification (client-side) ────────────────────────────────
 // Re-derives the outcome from revealed seeds — call after server reveals serverSeed
 
-async function verifyBet({ serverSeed, clientSeed, nonce, game }) {
+async function verifyBet({ serverSeed, clientSeed, nonce, game, slotType }) {
   const enc  = new TextEncoder();
   const key  = await crypto.subtle.importKey('raw', enc.encode(serverSeed), { name:'HMAC', hash:'SHA-256' }, false, ['sign']);
   const sig  = await crypto.subtle.sign('HMAC', key, enc.encode(`${clientSeed}:${nonce}`));
   const hex  = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2,'0')).join('');
 
-  return deriveOutcome(game, hex);
+  return deriveOutcome(game, hex, slotType);
 }
 
 async function hashServerSeed(serverSeed) {
@@ -60,17 +60,29 @@ async function hashServerSeed(serverSeed) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
+// Slot symbol sets — must match server-side SLOT_GAME_CONFIGS exactly
+const SLOT_SYMBOLS = {
+  classic:  ['🍒','🍋','🍊','⭐','💎','7️⃣'],
+  fruit:    ['🍒','🍋','🍊','🍉','🍇','🍌'],
+  diamond:  ['💎','⭐','🌟','✨','💫','🔥'],
+  wild:     ['🤠','⭐','🦬','🌵','💰','🔫'],
+  neon:     ['🕶️','🌃','💎','🎧','🔋','🧊','★'],
+  treasure: ['🏴‍☠️','🗺️','🪙','💰','⚓','🦜','🔑'],
+  pharaoh:  ['🪙','📜','🦂','🪆','👑','🔺','🪨'],
+};
+
 // Derives game outcome from HMAC hex — must match Edge Function logic exactly
-function deriveOutcome(game, hex) {
+function deriveOutcome(game, hex, slotType) {
   const val = parseInt(hex.slice(0, 8), 16); // first 4 bytes as uint32
   if (game === 'coin')  return val % 2 === 0 ? 'heads' : 'tails';
   if (game === 'dice')  return (val % 6) + 1;
   if (game === 'slots') {
-    const SYMBOLS = ['🍒','🍋','🍊','⭐','💎','7️⃣'];
+    const SYMBOLS = SLOT_SYMBOLS[slotType] || SLOT_SYMBOLS['classic'];
+    const symbolCount = SYMBOLS.length;
     return [
-      SYMBOLS[parseInt(hex.slice(0,  8), 16) % 6],
-      SYMBOLS[parseInt(hex.slice(8, 16), 16) % 6],
-      SYMBOLS[parseInt(hex.slice(16,24), 16) % 6],
+      SYMBOLS[parseInt(hex.slice(0,  8), 16) % symbolCount],
+      SYMBOLS[parseInt(hex.slice(8, 16), 16) % symbolCount],
+      SYMBOLS[parseInt(hex.slice(16,24), 16) % symbolCount],
     ];
   }
   if (game === 'crash') {
@@ -125,14 +137,15 @@ function renderPFWidget(containerId, { serverSeedHash, clientSeed, nonce }) {
     </div>`;
 }
 
-function renderPFVerify(containerId, { serverSeed, serverSeedHash, clientSeed, nonce, game, outcome }) {
+function renderPFVerify(containerId, { serverSeed, serverSeedHash, clientSeed, nonce, game, outcome, slotType }) {
   const el = document.getElementById(containerId);
   if (!el) return;
+  const params = JSON.stringify({ serverSeed, clientSeed, nonce, game, outcome, slotType: slotType || null }).replace(/"/g,'&quot;');
   el.innerHTML = `
     <div class="pf-row"><span class="pf-label">Revealed Server Seed</span><span class="pf-val pf-hash">${escapeHtml(serverSeed)}</span></div>
     <div class="pf-row"><span class="pf-label">Client Seed</span><span class="pf-val pf-hash">${escapeHtml(clientSeed)}</span></div>
     <div class="pf-row"><span class="pf-label">Nonce</span><span class="pf-val">${nonce}</span></div>
-    <button class="pf-btn pf-verify-btn" onclick="runVerify(${JSON.stringify({ serverSeed, clientSeed, nonce, game, outcome }).replace(/"/g,'&quot;')})">Verify This Bet</button>
+    <button class="pf-btn pf-verify-btn" onclick="runVerify(${params})">Verify This Bet</button>
     <div id="pfVerifyResult" class="pf-verify-result"></div>`;
 }
 
@@ -160,6 +173,9 @@ async function runVerify(params) {
     : '❌ Mismatch — outcome is not consistent with seeds';
   el.style.color  = match ? 'var(--green)' : 'var(--red)';
 }
+
+// Expose SLOT_SYMBOLS for other modules
+window.SLOT_SYMBOLS = SLOT_SYMBOLS;
 
 async function rotateSeed() {
   const input = document.getElementById('pfClientSeedInput');

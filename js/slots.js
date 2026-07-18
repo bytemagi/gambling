@@ -1,4 +1,5 @@
 guardPage();
+initSoundToggle();
 renderPFWidget('pfWidget', { serverSeedHash: '—', clientSeed: getClientSeed(), nonce: getNonce() });
 
 // ── SLOT GAME CONFIGURATIONS ───────────────────────────────────
@@ -64,16 +65,75 @@ const GAME_CONFIGS = {
     bonusFeatures: ['wild-substitution', 'bounty-bonus'],
     machineTheme: 'western',
     soundTheme: 'western'
+  },
+  neon: {
+    name: 'Neon Nights',
+    icon: '🌃',
+    symbols: ['🕶️','🌃','💎','🎧','🔋','🧊','★'],
+    payouts: {
+      '💎': 50,
+      '★': 25,
+      '🎧': 12,
+      '🕶️': 10,
+      '🌃': 8,
+      '🔋': 6,
+      '🧊': 5
+    },
+    bonusFeatures: ['neon-wilds'],
+    machineTheme: 'purple',
+    soundTheme: 'classic'
+  },
+  treasure: {
+    name: 'Treasure Quest',
+    icon: '🏴‍☠️',
+    symbols: ['🏴‍☠️','🗺️','🪙','💰','⚓','🦜','🔑'],
+    payouts: {
+      '💰': 40,
+      '🪙': 20,
+      '🗺️': 12,
+      '🏴‍☠️': 10,
+      '⚓': 8,
+      '🦜': 6,
+      '🔑': 5
+    },
+    bonusFeatures: ['treasure-hunt'],
+    machineTheme: 'gold',
+    soundTheme: 'luxury'
+  },
+  pharaoh: {
+    name: "Pharaoh's Riches",
+    icon: '👑',
+    symbols: ['🪙','📜','🦂','🪆','👑','🔺','🪨'],
+    payouts: {
+      '👑': 30,
+      '🔺': 18,
+      '🪆': 12,
+      '🦂': 10,
+      '📜': 8,
+      '🪙': 6,
+      '🪨': 4
+    },
+    bonusFeatures: ['expanding-wild'],
+    machineTheme: 'gold',
+    soundTheme: 'luxury'
   }
 };
 
 let currentGame = 'classic';
 let useFreeSpin = false;
 
+function getFreeSpins() {
+  return Number(localStorage.getItem('freeSpins') || '0');
+}
+
+function setFreeSpins(n) {
+  localStorage.setItem('freeSpins', String(n));
+}
+
 function updateFreeSpinDisplay() {
   const countEl = document.getElementById('freeSpinCount');
   const buttonEl = document.getElementById('btnFreeSpin');
-  const available = Number(window.currentFreeSpins || 0);
+  const available = getFreeSpins();
   if (countEl) countEl.textContent = String(available);
   if (buttonEl) {
     buttonEl.disabled = available <= 0;
@@ -83,7 +143,7 @@ function updateFreeSpinDisplay() {
 }
 
 function toggleFreeSpin() {
-  const available = Number(window.currentFreeSpins || 0);
+  const available = getFreeSpins();
   if (available <= 0) return;
   useFreeSpin = !useFreeSpin;
   updateFreeSpinDisplay();
@@ -150,20 +210,6 @@ function updatePaytable(config) {
   paytable.innerHTML = html;
 }
 
-function setQuickBet(n) {
-  const b = currentBalance || n;
-  document.getElementById('betAmt').value = Math.min(n, b);
-}
-function halfBet() {
-  const el = document.getElementById('betAmt');
-  el.value = Math.max(1, Math.floor(parseInt(el.value || 1) / 2));
-}
-function doubleBet() {
-  const b = currentBalance || 99999;
-  const el = document.getElementById('betAmt');
-  el.value = Math.min(parseInt(el.value || 1) * 2, b);
-}
-
 function buildStrip(finalSymbol) {
   const config = GAME_CONFIGS[currentGame];
   const count = 14;
@@ -224,18 +270,15 @@ async function spin() {
   });
 
   if (typeof res.freeSpinsRemaining === 'number') {
-    window.currentFreeSpins = Number(res.freeSpinsRemaining);
-  } else if (useFreeSpin && Number(window.currentFreeSpins || 0) > 0) {
-    window.currentFreeSpins = Math.max(0, Number(window.currentFreeSpins || 0) - 1);
+    setFreeSpins(Number(res.freeSpinsRemaining));
+  } else if (useFreeSpin && getFreeSpins() > 0) {
+    setFreeSpins(Math.max(0, getFreeSpins() - 1));
   }
   updateFreeSpinDisplay();
   updateBal(res.balance);
 
   const gain = Math.abs(res.delta);
   const multiplier = res.delta / amount;
-  
-  // Check for bonuses
-  const bonusActivated = checkBonuses(res.outcome, config);
   
   // Determine win type based on game-specific payouts
   const isJackpot = multiplier >= 10;
@@ -244,23 +287,17 @@ async function spin() {
   if (res.win && isJackpot) {
     playGameSound('jackpot');
     const jackpotLabel = multiplier >= 20 ? '💎 MEGA JACKPOT' : '7️⃣ JACKPOT';
-    let resultMsg = jackpotLabel + '! YOU WIN $' + gain + '!';
-    if (bonusActivated) resultMsg += ' 🎁 BONUS!';
-    setResult(resultMsg, 'jackpot-win');
+    setResult(jackpotLabel + '! YOU WIN $' + gain + '!', 'jackpot-win');
     [1, 2, 3].forEach(n => document.getElementById('rw' + n).classList.add('jackpot'));
     setTimeout(() => [1, 2, 3].forEach(n => document.getElementById('rw' + n).classList.remove('jackpot')), 2000);
     spawnParticles(30);
   } else if (res.win && isBigWin) {
     playGameSound('win');
-    let resultMsg = '🎉 THREE OF A KIND — YOU WIN $' + gain + '!';
-    if (bonusActivated) resultMsg += ' 🎁 BONUS!';
-    setResult(resultMsg, 'win');
+    setResult('🎉 THREE OF A KIND — YOU WIN $' + gain + '!', 'win');
     spawnParticles(12);
   } else if (res.win) {
     playGameSound('win');
-    let resultMsg = '✨ YOU WIN $' + gain + '!';
-    if (bonusActivated) resultMsg += ' 🎁 BONUS!';
-    setResult(resultMsg, 'win');
+    setResult('✨ YOU WIN $' + gain + '!', 'win');
     spawnParticles(8);
   } else if (res.delta === 0) {
     setResult('🤝 TWO OF A KIND — BET RETURNED', 'idle');
@@ -277,138 +314,9 @@ async function spin() {
     clientSeed: res.clientSeed,
     nonce: res.nonce,
     game: 'slots',
-    outcome: res.outcome
+    outcome: res.outcome,
+    slotType: currentGame,
   });
-}
-
-function checkBonuses(outcome, config) {
-  // Check if any bonus features are activated
-  if (!config.bonusFeatures || config.bonusFeatures.length === 0) return false;
-  
-  const bonuses = [];
-  const gameType = currentGame;
-  
-  // Check each bonus feature
-  config.bonusFeatures.forEach(feature => {
-    switch(feature) {
-      case 'progressive-jackpot':
-        // Classic 7s: Progressive jackpot increases with each spin
-        if (outcome[0] === '7️⃣' && outcome[1] === '7️⃣' && outcome[2] === '7️⃣') {
-          bonuses.push({ type: 'progressive-jackpot', multiplier: 2 });
-        }
-        break;
-        
-      case 'free-spins':
-        // Fruit Fiesta: 3+ of any fruit awards free spins
-        const fruitSymbols = ['🍒','🍋','🍊','🍉','🍇','🍌'];
-        if (fruitSymbols.includes(outcome[0]) && 
-            fruitSymbols.includes(outcome[1]) && 
-            fruitSymbols.includes(outcome[2])) {
-          bonuses.push({ type: 'free-spins', count: 5 });
-        }
-        break;
-        
-      case 'multiplier':
-        // Fruit Fiesta: Random multiplier 2x-5x on wins
-        if (outcome[0] === outcome[1] && outcome[1] === outcome[2]) {
-          const mult = Math.floor(Math.random() * 4) + 2; // 2-5x
-          bonuses.push({ type: 'multiplier', value: mult });
-        }
-        break;
-        
-      case 'mega-multiplier':
-        // Diamond Rush: Up to 10x multiplier on diamond wins
-        if (outcome[0] === '💎' && outcome[1] === '💎' && outcome[2] === '💎') {
-          const mult = Math.floor(Math.random() * 9) + 2; // 2-10x
-          bonuses.push({ type: 'mega-multiplier', value: mult });
-        }
-        break;
-        
-      case 'bonus-round':
-        // Diamond Rush: 3 stars triggers bonus round
-        if (outcome[0] === '⭐' && outcome[1] === '⭐' && outcome[2] === '⭐') {
-          bonuses.push({ type: 'bonus-round', guaranteedWin: true });
-        }
-        break;
-        
-      case 'wild-substitution':
-        // Wild West: 🤠 acts as wild (simplified - any 2 matching + 🤠 = win)
-        if (outcome.includes('🤠')) {
-          bonuses.push({ type: 'wild-substitution', message: '🤠 Wild Substitution!' });
-        }
-        break;
-        
-      case 'bounty-bonus':
-        // Wild West: 3 money bags = bounty bonus
-        if (outcome[0] === '💰' && outcome[1] === '💰' && outcome[2] === '💰') {
-          bonuses.push({ type: 'bounty-bonus', multiplier: 3 });
-        }
-        break;
-    }
-  });
-  
-  // Apply bonuses and play sounds
-  if (bonuses.length > 0) {
-    applyBonuses(bonuses, config);
-    return true;
-  }
-  
-  return false;
-}
-
-function applyBonuses(bonuses, config) {
-  let bonusMessage = '🎁 BONUS ACTIVATED: ';
-  const sounds = [];
-  
-  bonuses.forEach(bonus => {
-    switch(bonus.type) {
-      case 'progressive-jackpot':
-        bonusMessage += 'Progressive Jackpot ×2! ';
-        sounds.push('soundJackpot');
-        break;
-        
-      case 'free-spins':
-        bonusMessage += `${bonus.count} Free Spins! `;
-        sounds.push('soundFreeSpins');
-        break;
-        
-      case 'multiplier':
-      case 'mega-multiplier':
-        bonusMessage += `${bonus.value}× Multiplier! `;
-        sounds.push('soundMultiplier');
-        break;
-        
-      case 'bonus-round':
-        bonusMessage += 'BONUS ROUND! Guaranteed Win! ';
-        sounds.push('soundBonusActivate');
-        break;
-        
-      case 'wild-substitution':
-        bonusMessage += 'Wild Substitution! ';
-        sounds.push('soundWildSubstitute');
-        break;
-        
-      case 'bounty-bonus':
-        bonusMessage += `Bounty Bonus ×${bonus.multiplier}! `;
-        sounds.push('soundBountyBonus');
-        break;
-    }
-  });
-  
-  // Play all bonus sounds
-  sounds.forEach(soundName => {
-    if (window[soundName]) {
-      setTimeout(() => window[soundName](), sounds.indexOf(soundName) * 200);
-    }
-  });
-  
-  // Show bonus message
-  const resultEl = document.getElementById('result');
-  const currentMsg = resultEl.textContent;
-  resultEl.textContent = currentMsg + ' | ' + bonusMessage;
-  
-  // Spawn extra particles for bonuses
-  spawnParticles(15);
 }
 
 // ── GAME-SPECIFIC SOUNDS ──────────────────────────────────────

@@ -30,8 +30,21 @@ create index if not exists idx_deposits_user_id on public.deposits(user_id);
 create index if not exists idx_deposits_paypal_order_id on public.deposits(paypal_order_id);
 create index if not exists idx_deposits_status on public.deposits(status);
 
--- Function to credit balance after successful deposit
-create or replace function public.credit_balance(p_user_id uuid, p_amount integer)
+-- Function to credit balance — restricted to caller's own account
+create or replace function public.credit_balance(p_amount integer)
+returns integer language plpgsql security definer as $$
+declare new_bal integer;
+begin
+  update public.profiles
+  set balance = balance + p_amount
+  where id = auth.uid()
+  returning balance into new_bal;
+  return coalesce(new_bal, 0);
+end;
+$$;
+
+-- Service-role version for edge functions that need to credit any user
+create or replace function public.credit_balance_for(p_user_id uuid, p_amount integer)
 returns integer language plpgsql security definer as $$
 declare new_bal integer;
 begin

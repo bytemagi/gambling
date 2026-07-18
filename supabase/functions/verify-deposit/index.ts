@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const PAYPAL_API = 'https://api.sandbox.paypal.com'; // Change to https://api.paypal.com for production
+const PAYPAL_API = 'https://api.paypal.com';
 const PAYPAL_CLIENT_ID = Deno.env.get('PAYPAL_CLIENT_ID');
 const PAYPAL_CLIENT_SECRET = Deno.env.get('PAYPAL_CLIENT_SECRET');
 
@@ -76,7 +76,37 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing authorization' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      });
+    }
+
+    // Verify caller identity via JWT
+    const userClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
+    if (authError || !user?.id) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      });
+    }
+
     const { orderId, userId } = await req.json();
+
+    // Only allow users to deposit to their own account
+    if (userId !== user.id) {
+      return new Response(JSON.stringify({ error: 'Cannot deposit to another account' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      });
+    }
 
     if (!orderId || !userId) {
       return new Response(JSON.stringify({ error: 'Missing orderId or userId' }), {
@@ -169,7 +199,7 @@ Deno.serve(async (req: Request) => {
 
     // Credit user balance with a 10% crypto-like deposit bonus
     const { data: updatedProfile, error: creditError } = await supabase
-      .rpc('credit_balance', { p_user_id: userId, p_amount: creditedAmount });
+      .rpc('credit_balance_for', { p_user_id: userId, p_amount: creditedAmount });
 
     if (creditError) {
       return new Response(JSON.stringify({ error: 'Failed to credit balance' }), {
@@ -192,7 +222,7 @@ Deno.serve(async (req: Request) => {
     );
   } catch (error) {
     console.error('Error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     });

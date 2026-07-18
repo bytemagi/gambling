@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const supabase = createClient(
+const supabaseService = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
@@ -15,32 +15,49 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { userId, referralCode = '', username = '' } = await req.json();
-    if (!userId) {
-      return new Response(JSON.stringify({ ok: false, error: 'Missing userId' }), { status: 400, headers: commonHeaders() });
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ ok: false, error: 'Missing authorization' }), { status: 401, headers: commonHeaders() });
     }
+
+    const userClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
+    if (authError || !user?.id) {
+      return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), { status: 401, headers: commonHeaders() });
+    }
+
+    const { referralCode = '' } = await req.json();
+    const userId = user.id;
 
     const normalizedReferralCode = String(referralCode || '').trim().toUpperCase();
     const bonusAmount = 500;
 
-    const { data: userProfile } = await supabase.from('profiles').select('id, balance, referral_code, referred_by').eq('id', userId).single();
+    const { data: userProfile } = await supabaseService.from('profiles').select('id, balance, referral_code, referred_by, signup_bonus_claimed').eq('id', userId).single();
     if (!userProfile) {
       return new Response(JSON.stringify({ ok: false, error: 'Profile not found' }), { status: 404, headers: commonHeaders() });
+    }
+
+    if (userProfile.signup_bonus_claimed) {
+      return new Response(JSON.stringify({ ok: true, bonusAmount: 0, credited: false, reason: 'Already claimed' }), { headers: commonHeaders() });
     }
 
     const hasReferral = Boolean(normalizedReferralCode);
     let referrerProfile = null;
     if (hasReferral) {
-      const { data: referrer } = await supabase.from('profiles').select('id, balance').eq('referral_code', normalizedReferralCode).single();
+      const { data: referrer } = await supabaseService.from('profiles').select('id, balance').eq('referral_code', normalizedReferralCode).single();
       referrerProfile = referrer;
     }
 
     if (referrerProfile?.id && referrerProfile.id !== userId) {
-      await supabase.rpc('credit_balance', { p_user_id: referrerProfile.id, p_amount: bonusAmount });
-      await supabase.from('profiles').update({ referred_by: normalizedReferralCode }).eq('id', userId).select().single();
-      await supabase.from('bets').insert({
+      await supabaseService.rpc('credit_balance_for', { p_user_id: referrerProfile.id, p_amount: bonusAmount });
+      await supabaseService.from('profiles').update({ referred_by: normalizedReferralCode }).eq('id', userId).select().single();
+      await supabaseService.from('bets').insert({
         user_id: referrerProfile.id,
-        username: username || 'referrer',
+        username: 'referrer',
         game: 'referral',
         amount: 0,
         outcome: { result: 'referral', win: true, delta: bonusAmount },
@@ -49,12 +66,13 @@ Deno.serve(async (req) => {
     }
 
     const newBalance = userProfile.balance + bonusAmount;
-    await supabase.rpc('credit_balance', { p_user_id: userId, p_amount: bonusAmount });
+    await supabaseService.rpc('credit_balance_for', { p_user_id: userId, p_amount: bonusAmount });
+    await supabaseService.from('profiles').update({ signup_bonus_claimed: true }).eq('id', userId);
 
     if (referrerProfile?.id && referrerProfile.id !== userId) {
-      await supabase.from('bets').insert({
+      await supabaseService.from('bets').insert({
         user_id: userId,
-        username: username || 'player',
+        username: 'player',
         game: 'referral',
         amount: 0,
         outcome: { result: 'signup-bonus', win: true, delta: bonusAmount },
@@ -64,6 +82,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({ ok: true, bonusAmount, credited: true }), { headers: commonHeaders() });
   } catch (error) {
-    return new Response(JSON.stringify({ ok: false, error: error.message }), { status: 500, headers: commonHeaders() });
+    console.error('handle-signup-bonus error:', error);
+    return new Response(JSON.stringify({ ok: false, error: 'Internal server error' }), { status: 500, headers: commonHeaders() });
   }
 });

@@ -92,6 +92,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #00b89420 0%, transpa
     </a>
     <nav class="header-nav">
       <a class="nav-link" href="index.html"><span class="nav-icon">🏠</span> Lobby</a>
+      <a class="nav-link" href="fish.html"><span class="nav-icon">🐟</span> Fish Frenzy <span class="nav-badge new">NEW</span></a>
       <a class="nav-link" href="slots.html"><span class="nav-icon">🎰</span> Slots</a>
       <a class="nav-link" href="crash.html"><span class="nav-icon">🚀</span> Crash</a>
       <a class="nav-link active" href="mines.html"><span class="nav-icon">💣</span> Mines</a>
@@ -201,21 +202,18 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #00b89420 0%, transpa
 <script src="../js/provably-fair.js"></script>
 <script>
   guardPage();
+  initSoundToggle();
   renderPFWidget('pfWidget', { serverSeedHash: '—', clientSeed: getClientSeed(), nonce: getNonce() });
 
   let selectedMines = 3;
   let gameActive    = false;
-  let revealed      = [];   // cell indices revealed so far
-  let minePositions = [];   // revealed from server on lose/cashout
+  let revealed      = [];
+  let minePositions = [];
   let betAmount     = 0;
   let activeRoundId = null;
   let activeServerSeedHash = '—';
   let activeClientSeed = getClientSeed();
   let activeNonce = getNonce();
-
-  function setQuickBet(n) { const b=currentBalance||n; document.getElementById('betAmt').value=Math.min(n,b); }
-  function halfBet()   { const el=document.getElementById('betAmt'); el.value=Math.max(1,Math.floor(parseInt(el.value||1)/2)); }
-  function doubleBet() { const b=currentBalance||99999; const el=document.getElementById('betAmt'); el.value=Math.min(parseInt(el.value||1)*2,b); }
 
   function setMines(n) {
     selectedMines = n;
