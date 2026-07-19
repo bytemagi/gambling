@@ -32,6 +32,9 @@ async function apiLogin(username, password) {
   }
 
   const profile = await fetchProfile();
+  if (!profile) {
+    return { ok: false, error: 'Could not load profile. Please try again.' };
+  }
   currentBalance = profile.balance;
   return { ok: true, balance: profile.balance, username: profile.username };
 }
@@ -57,33 +60,14 @@ async function apiSignup(username, password, referralCode = '') {
     return { ok: false, error: signUpError.message };
   }
 
-  // Immediately sign in so we have a session for the bonus edge function
+  // Sign in to get a session, then fetch the profile balance
   const signInResult = await db.auth.signInWithPassword({ email, password });
   if (signInResult.error || !signInResult.data?.session?.access_token) {
     return { ok: false, error: 'Account created but unable to sign in automatically.' };
   }
 
-  try {
-    await fetch(`${SUPABASE_URL}/functions/v1/handle-signup-bonus`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${signInResult.data.session.access_token}`,
-      },
-      body: JSON.stringify({
-        userId: signInResult.data.user?.id || signUpData?.user?.id,
-        referralCode: normalizedReferralCode,
-        username,
-      }),
-    });
-  } catch (bonusErr) {
-    console.warn('Referral bonus processing failed:', bonusErr);
-  }
-
-  // Wait briefly for the edge function to complete, then fetch actual balance
-  await new Promise(r => setTimeout(r, 500));
   const postProfile = await fetchProfile();
-  currentBalance = postProfile?.balance ?? 100;
+  currentBalance = postProfile?.balance ?? 0;
   return { ok: true, balance: currentBalance, username };
 }
 
