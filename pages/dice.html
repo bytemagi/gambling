@@ -306,12 +306,6 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #1a3a6e20 0%, transpa
     renderPFVerify('pfWidget', { serverSeed: res.serverSeed, serverSeedHash: res.serverSeedHash, clientSeed: res.clientSeed, nonce: res.nonce, game: 'dice', outcome: res.outcome });
   }
 
-  function setResult(msg, cls) {
-    const el = document.getElementById('result');
-    el.textContent = msg;
-    el.className = 'result-banner ' + cls;
-  }
-
   function addHistory(rolled, guessed, win, amount) {
     const list = document.getElementById('historyList');
     const item = document.createElement('div');
@@ -319,18 +313,6 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #1a3a6e20 0%, transpa
     item.innerHTML = `<span>Rolled <strong>${rolled}</strong> · Guessed <strong>${guessed}</strong></span><span class="h-amt">${win?'+':'−'}$${win?amount*5:amount}</span>`;
     list.prepend(item);
     if (list.children.length > 8) list.lastChild.remove();
-  }
-
-  function spawnParticles(color) {
-    const cx=window.innerWidth/2, cy=window.innerHeight/2;
-    for (let i=0;i<30;i++) {
-      const p=document.createElement('div');
-      p.className='particle';
-      const size=6+Math.random()*8, angle=Math.random()*Math.PI*2, dist=80+Math.random()*160;
-      p.style.cssText=`width:${size}px;height:${size}px;background:${color};left:${cx}px;top:${cy}px;--tx:${Math.cos(angle)*dist}px;--ty:${Math.sin(angle)*dist}px;`;
-      document.body.appendChild(p);
-      setTimeout(()=>p.remove(),900);
-    }
   }
 </script>
 </body>

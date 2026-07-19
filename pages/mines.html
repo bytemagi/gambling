@@ -407,12 +407,6 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #00b89420 0%, transpa
     document.querySelectorAll('.mine-cell').forEach(c => { c.classList.add('disabled'); c.onclick = null; });
   }
 
-  function setResult(msg, cls) {
-    const el = document.getElementById('result');
-    el.textContent = msg;
-    el.className = 'result-banner ' + cls;
-  }
-
   function addHistory(mines, safe, win, bet, delta) {
     const list = document.getElementById('historyList');
     const item = document.createElement('div');

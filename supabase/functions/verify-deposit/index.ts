@@ -140,7 +140,7 @@ Deno.serve(async (req: Request) => {
 
     // Extract amount and payer info
     const purchaseUnit = capturedOrder.purchase_units[0];
-    const amountValue = parseInt(purchaseUnit.amount.value) * 100; // Convert to cents
+    const amountValue = Math.round(parseFloat(purchaseUnit.amount.value) * 100); // Convert to cents
     const payerId = capturedOrder.payer.payer_info?.payer_id || capturedOrder.payer.email_address;
 
     // Check if deposit already exists
@@ -198,7 +198,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Credit user balance with a 10% crypto-like deposit bonus
-    const { data: updatedProfile, error: creditError } = await supabase
+    const { error: creditError } = await supabase
       .rpc('credit_balance_for', { p_user_id: userId, p_amount: creditedAmount });
 
     if (creditError) {
@@ -208,12 +208,19 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // Fetch actual post-credit balance
+    const { data: updatedProfile } = await supabase
+      .from('profiles')
+      .select('balance')
+      .eq('id', userId)
+      .single();
+
     return new Response(
       JSON.stringify({
         success: true,
         deposit,
         bonusAmount: Math.round(bonusAmount),
-        newBalance: profile.balance + creditedAmount,
+        newBalance: updatedProfile?.balance ?? profile.balance + creditedAmount,
       }),
       {
         status: 200,

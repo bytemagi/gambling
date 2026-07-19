@@ -1,39 +1,35 @@
 // PayPal Integration for Play-Money Deposits
-// Include this in your HTML: <script src="https://www.paypal.com/sdk/js?client-id=YOUR_CLIENT_ID&currency=USD"></script>
+// The PayPal SDK is loaded via a <script> tag in the HTML page with the real client ID.
+// This module assumes `window.paypal` is available after the SDK loads.
 
 const PAYPAL_CONFIG = {
-  // Get these from https://developer.paypal.com/dashboard/
-  // Replace with your actual Client ID
-  clientId: 'YOUR_PAYPAL_CLIENT_ID',
-  
   // Deposit amounts in cents (USD)
   amounts: {
     small: { value: 500, label: '5.00', points: 500 },
     medium: { value: 2000, label: '20.00', points: 2000 },
     large: { value: 5000, label: '50.00', points: 5000 },
-    custom: null, // User can enter custom amount
+    custom: null,
   },
   
   // Supabase Edge Function URL
-  verifyDepositUrl: 'https://lxzpltvuauzkgddjsplb.supabase.co/functions/v1/verify-deposit',
+  verifyDepositUrl: SUPABASE_URL + '/functions/v1/verify-deposit',
 };
 
-// Initialize PayPal
-async function initializePayPal() {
+// Initialize PayPal — assumes SDK is already loaded via HTML script tag
+function initializePayPal() {
   if (typeof paypal === 'undefined') {
-    console.error('PayPal SDK not loaded. Add <script> tag with PayPal SDK.');
-    return;
+    console.error('PayPal SDK not loaded. Ensure the SDK script tag is present in the HTML.');
+    return null;
   }
-
   return paypal;
 }
 
 // Create PayPal button for a specific amount
 async function createPayPalButton(containerId, amountInCents) {
-  const paypalSdk = await initializePayPal();
+  const paypalSdk = initializePayPal();
   
   const amountInDollars = (amountInCents / 100).toFixed(2);
-  const userId = await getCurrentUserId(); // You need to provide this function
+  const userId = await getCurrentUserId();
 
   if (!paypalSdk) return;
 

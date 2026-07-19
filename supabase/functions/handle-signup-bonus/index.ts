@@ -55,26 +55,39 @@ Deno.serve(async (req) => {
     const hasValidReferrer = referrerProfile?.id && referrerProfile.id !== userId;
 
     if (hasValidReferrer) {
+      // Fetch referrer's real username
+      const { data: referrerProfileFull } = await supabaseService.from('profiles').select('username').eq('id', referrerProfile.id).single();
+      const referrerUsername = referrerProfileFull?.username ?? 'unknown';
+
       await supabaseService.rpc('credit_balance_for', { p_user_id: referrerProfile.id, p_amount: bonusAmount });
-      await supabaseService.from('profiles').update({ referred_by: normalizedReferralCode }).eq('id', userId);
+      await supabaseService.from('profiles').update({ referred_by: normalizedReferralCode }).eq('id', userId).select().single();
+
+      // Fetch referrer's balance after credit
+      const { data: referrerAfter } = await supabaseService.from('profiles').select('balance').eq('id', referrerProfile.id).single();
       await supabaseService.from('bets').insert({
         user_id: referrerProfile.id,
-        username: 'referrer',
+        username: referrerUsername,
         game: 'referral',
         amount: 0,
         outcome: { result: 'referral', win: true, delta: bonusAmount },
-        balance_after: null,
+        balance_after: referrerAfter?.balance ?? 0,
       });
     }
 
     const newBalance = userProfile.balance + bonusAmount;
-    await supabaseService.rpc('credit_balance_for', { p_user_id: userId, p_amount: bonusAmount });
+    // Note: credit_balance uses auth.uid(), but edge functions use service role.
+    // Use a direct update instead for the signup bonus credit.
+    await supabaseService.from('profiles').update({ balance: newBalance }).eq('id', userId);
     await supabaseService.from('profiles').update({ signup_bonus_claimed: true }).eq('id', userId);
+
+    // Fetch new user's real username
+    const { data: newUserProfile } = await supabaseService.from('profiles').select('username').eq('id', userId).single();
+    const newUsername = newUserProfile?.username ?? 'unknown';
 
     if (hasValidReferrer) {
       await supabaseService.from('bets').insert({
         user_id: userId,
-        username: 'player',
+        username: newUsername,
         game: 'referral',
         amount: 0,
         outcome: { result: 'signup-bonus', win: true, delta: bonusAmount },

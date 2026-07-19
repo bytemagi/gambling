@@ -155,6 +155,39 @@
   </div>
 </div>
 
+<div class="powerup-indicator" id="powerupIndicator">
+  ⚡ INVINCIBLE!
+</div>
+
+<!-- Start Screen -->
+<div class="start-screen" id="startScreen">
+  <div class="screen-content">
+    <h1 class="game-title">🐟 Fish Frenzy</h1>
+    <p class="game-subtitle">Eat smaller fish. Avoid bigger fish. Survive!</p>
+    
+    <button class="start-btn" id="startBtn">Start Game</button>
+    <div style="margin-top:16px;display:flex;align-items:center;justify-content:center;gap:10px;">
+      <label style="color:var(--muted);font-size:0.85rem;">Bet:</label>
+      <input id="fishBetInput" type="number" min="1" step="1" value="1" style="width:80px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:#0a0f1a;color:var(--gold);font-family:'Cinzel',serif;font-size:1rem;text-align:center;">
+      <span style="color:var(--muted);font-size:0.85rem;">$</span>
+    </div>
+    <div style="margin-top:8px;color:var(--muted);font-size:0.75rem;">Score ≥500 → 1.5x · ≥1000 → 2x · ≥2000 → 3x · ≥5000 → 5x</div>
+    <a href="index.html" class="restart-btn" style="text-decoration:none;margin-top:12px;background:transparent;border:2px solid var(--gold);color:var(--gold);box-shadow:none;">← Back to Lobby</a>
+
+    <div class="instructions">
+      <h3>How to Play</h3>
+      <ul>
+        <li><strong>Mouse/Touch:</strong> Move your fish</li>
+        <li><strong>Eat smaller fish</strong> to grow and score points</li>
+        <li><strong>Avoid larger fish</strong> - they will eat you!</li>
+        <li><strong>Collect power-ups</strong> for special abilities</li>
+        <li><strong>Progress through levels</strong> as you score points</li>
+        <li><strong>Become the biggest fish</strong> in the ocean!</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
 <footer class="site-footer" style="padding:36px 24px 28px;text-align:center;margin-top:60px">
   <img src="../logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse" style="margin:0 auto 18px">
   <div class="footer-links" style="margin-bottom:18px">
@@ -181,5 +214,87 @@
 <script src="../js/sounds.js"></script>
 <script src="../js/provably-fair.js"></script>
 <script src="../js/fish.js"></script>
+<script>
+// Auth guard — redirect to login if not authenticated
+guardPage();
+
+// Start game when button clicked
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('restartBtn').addEventListener('click', restartGame);
+
+function getScoreMultiplier(score) {
+  if (score >= 5000) return 5;
+  if (score >= 2000) return 3;
+  if (score >= 1000) return 2;
+  if (score >= 500)  return 1.5;
+  return 0;
+}
+
+async function startGame() {
+  const betInput = document.getElementById('fishBetInput');
+  const betAmount = parseInt(betInput.value) || 0;
+
+  if (betAmount > 0) {
+    if (currentBalance < betAmount) {
+      setResult('Not enough balance!', 'lose');
+      return;
+    }
+    // Deduct balance
+    const { error } = await db.rpc('deduct_balance', { p_amount: betAmount });
+    if (error) { setResult('Bet failed: ' + error.message, 'lose'); return; }
+    currentBalance -= betAmount;
+    updateBal(currentBalance);
+  }
+
+  document.getElementById('startScreen').classList.add('hidden');
+  if (typeof FishGame !== 'undefined') {
+    FishGame.start(betAmount);
+  }
+}
+
+async function restartGame() {
+  document.getElementById('gameOverScreen').classList.add('hidden');
+
+  // Settle previous bet if any
+  const result = window._fishGameResult;
+  if (result && result.betAmount > 0) {
+    const multiplier = getScoreMultiplier(result.score);
+    const profit = Math.round(result.betAmount * multiplier) - result.betAmount;
+
+    if (multiplier > 0) {
+      const { error } = await db.rpc('credit_balance', { p_amount: result.betAmount + profit });
+      if (!error) currentBalance += result.betAmount + profit;
+    }
+
+    // Record bet
+    const session = await getSession();
+    if (session?.user?.id) {
+      await db.from('bets').insert({
+        user_id: session.user.id,
+        game: 'fish',
+        amount: result.betAmount,
+        balance_after: currentBalance,
+        outcome: {
+          score: result.score,
+          fishEaten: result.fishEaten,
+          level: result.level,
+          survivalTime: result.survivalTime,
+          multiplier,
+          delta: profit,
+          win: profit > 0,
+          result: `Score ${result.score}`
+        }
+      });
+    }
+
+    updateBal(currentBalance);
+    setResult(profit > 0 ? `🐟 Score ${result.score} — WIN $${profit}!` : `🐟 Score ${result.score} — No payout`, profit > 0 ? 'win' : 'lose');
+    window._fishGameResult = null;
+  }
+
+  // Start next round with fresh bet
+  await startGame();
+}
+</script>
 </body>
 </html>

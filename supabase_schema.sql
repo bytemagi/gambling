@@ -121,3 +121,23 @@ begin
   return new_bal;
 end;
 $$;
+
+-- Credits amount back (winnings)
+create or replace function public.credit_balance(p_amount integer)
+returns void language plpgsql security definer as $$
+begin
+  update public.profiles
+    set balance = balance + p_amount
+    where id = auth.uid();
+end;
+$$;
+
+-- Credits amount for a specific user (used by edge functions with service role)
+create or replace function public.credit_balance_for(p_user_id uuid, p_amount integer)
+returns void language plpgsql security definer as $$
+begin
+  update public.profiles
+    set balance = balance + p_amount
+    where id = p_user_id;
+end;
+$$;

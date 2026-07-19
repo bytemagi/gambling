@@ -71,6 +71,7 @@ const FishGame = (function() {
   let animationId;
   let lastTime = 0;
   let gameTime = 0;
+  let currentBetAmount = 0;
 
   // Player state
   let player = {
@@ -141,8 +142,9 @@ const FishGame = (function() {
   }
 
   // Start game
-  function start() {
+  function start(betAmount) {
     if (!canvas) init();
+    currentBetAmount = betAmount || 0;
     gameRunning = true;
     stats = {
       score: 0,
@@ -633,6 +635,15 @@ const FishGame = (function() {
     document.getElementById('timeSurvived').textContent = survivalTime + 's';
     
     document.getElementById('gameOverScreen').classList.remove('hidden');
+    
+    // Expose result for betting integration
+    window._fishGameResult = {
+      score: stats.score,
+      betAmount: currentBetAmount,
+      survivalTime,
+      fishEaten: stats.fishEaten,
+      level: stats.level
+    };
     
     playSound('gameover');
   }

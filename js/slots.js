@@ -43,3 +43,12 @@ function initGameSelector() {
 if (document.querySelector('.game-selector-grid')) {
   initGameSelector();
 }
+
+function addHistory(reels, win, jackpot, bet, gain) {
+  const list = document.getElementById('historyList');
+  const item = document.createElement('div');
+  item.className = 'history-item ' + (jackpot ? 'jackpot' : win ? 'win' : 'lose');
+  item.innerHTML = `<span>${reels.join(' ')}</span><span class="h-amt">${win ? '+' : '−'}$${win ? gain : bet}</span>`;
+  list.prepend(item);
+  if (list.children.length > 8) list.lastChild.remove();
+}

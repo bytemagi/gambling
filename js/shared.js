@@ -268,19 +268,51 @@ function doubleBet() {
 
 // ── Shared particles ──────────────────────────────────────────
 
-function spawnParticles(count) {
-  const countVal = count || 20;
-  const emojis = ['💎', '⭐', '🎉', '✨', '💰', '🎊', '🔥'];
+function spawnParticles(countOrColor) {
   const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
-  for (let i = 0; i < countVal; i++) {
-    const p = document.createElement('div');
-    p.className = 'particle';
-    const angle = Math.random() * Math.PI * 2, dist = 100 + Math.random() * 200;
-    p.style.cssText = `left:${cx}px;top:${cy}px;--tx:${Math.cos(angle) * dist}px;--ty:${Math.sin(angle) * dist}px;`;
-    p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-    document.body.appendChild(p);
-    setTimeout(() => p.remove(), 1100);
+  // If a color string is passed, spawn colored dots; otherwise spawn emoji particles
+  if (typeof countOrColor === 'string') {
+    const color = countOrColor;
+    for (let i = 0; i < 30; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = 6 + Math.random() * 8;
+      const angle = Math.random() * Math.PI * 2, dist = 80 + Math.random() * 160;
+      p.style.cssText = `width:${size}px;height:${size}px;background:${color};left:${cx}px;top:${cy}px;--tx:${Math.cos(angle)*dist}px;--ty:${Math.sin(angle)*dist}px;`;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 900);
+    }
+  } else {
+    const countVal = countOrColor || 20;
+    const emojis = ['💎', '⭐', '🎉', '✨', '💰', '🎊', '🔥'];
+    for (let i = 0; i < countVal; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const angle = Math.random() * Math.PI * 2, dist = 100 + Math.random() * 200;
+      p.style.cssText = `left:${cx}px;top:${cy}px;--tx:${Math.cos(angle) * dist}px;--ty:${Math.sin(angle) * dist}px;`;
+      p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 1100);
+    }
   }
+}
+
+// ── Shared game UI helpers ────────────────────────────────────
+
+function setResult(msg, cls) {
+  const el = document.getElementById('result');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'result-banner ' + cls;
+}
+
+function updatePotential() {
+  const amtEl = document.getElementById('betAmt');
+  const el = document.getElementById('potential');
+  if (!amtEl || !el) return;
+  const amt = parseFloat(amtEl.value) || 0;
+  const mult = parseFloat(document.getElementById('autoCashout')?.value) || 1;
+  el.innerHTML = `Potential win: <span>$${(amt * mult).toFixed(2)}</span>`;
 }
 
 // ── Shared header/footer (eliminates 9x copy-paste) ───────────

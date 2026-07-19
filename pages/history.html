@@ -143,6 +143,7 @@
     <button class="filter-btn" onclick="setFilter('slots', this)">🎰 Slots</button>
     <button class="filter-btn" onclick="setFilter('crash', this)">🚀 Crash</button>
     <button class="filter-btn" onclick="setFilter('mines', this)">💣 Mines</button>
+    <button class="filter-btn" onclick="setFilter('fish', this)">🐟 Fish</button>
     <button class="filter-btn" onclick="setFilter('win', this)">✅ Wins</button>
     <button class="filter-btn" onclick="setFilter('lose', this)">❌ Losses</button>
   </div>
@@ -194,7 +195,7 @@
   guardPage();
   initSoundToggle();
 
-  const ICONS  = { coin:'🪙', dice:'🎲', slots:'🎰', crash:'🚀', mines:'💣' };
+  const ICONS  = { coin:'🪙', dice:'🎲', slots:'🎰', crash:'🚀', mines:'💣', fish:'🐟' };
   const PAGE_SIZE = 20;
   let allBets  = [];
   let filtered = [];
@@ -285,20 +286,6 @@
     return row;
   }
 
-  function normalizeArray(values) {
-    return Array.isArray(values) ? values.map(Number).filter(Number.isFinite).sort((a,b) => a-b) : [];
-  }
-
-  function compareDerivedOutcome(game, derived, expected) {
-    if (game === 'mines') {
-      const derivedSet = new Set(normalizeArray(derived));
-      const expectedCells = normalizeArray(expected);
-      if (!expectedCells.length) return false;
-      return expectedCells.every(cell => !derivedSet.has(cell));
-    }
-    return JSON.stringify(derived) === JSON.stringify(expected);
-  }
-
   async function openVerify(betId) {
     const bet = allBets.find(b => b.id === betId);
     if (!bet) return;
@@ -329,6 +316,29 @@
     const out = document.getElementById('verifyOut');
     out.textContent = ok ? '✅ Verified — hash and outcome both match' : `❌ Mismatch — hash:${hashOk} outcome:${outcomeOk}`;
     out.className   = 'verify-result ' + (ok ? 'ok' : 'fail');
+
+    // Add server-side verify button
+    const srvBtn = document.createElement('button');
+    srvBtn.className = 'pf-btn pf-verify-btn';
+    srvBtn.style.marginTop = '12px';
+    srvBtn.textContent = '🔒 Verify with Server';
+    srvBtn.onclick = async () => {
+      srvBtn.disabled = true;
+      srvBtn.textContent = 'Verifying…';
+      try {
+        const res = await db.functions.invoke('verify-bet', { body: { betId } });
+        const srvOut = document.getElementById('verifyOut');
+        if (res.error) { srvOut.textContent = '❌ Server error: ' + res.error.message; srvOut.className = 'verify-result fail'; return; }
+        const data = res.data;
+        const srvOk = data.hashMatch;
+        srvOut.textContent = srvOk ? '✅ Server confirms — hash matches' : '❌ Server says hash mismatch';
+        srvOut.className = 'verify-result ' + (srvOk ? 'ok' : 'fail');
+      } catch (e) {
+        document.getElementById('verifyOut').textContent = '❌ ' + e.message;
+      }
+      srvBtn.remove();
+    };
+    content.appendChild(srvBtn);
   }
 
   function closeModal(e) {
