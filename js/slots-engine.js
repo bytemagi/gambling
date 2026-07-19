@@ -2042,7 +2042,7 @@ const SLOTS_ENGINE = {
 
   bindEvents() {
     // Spin button
-    document.getElementById('btnSpin')?.addEventListener('click', () => this.spin());
+    document.getElementById('spinBtn')?.addEventListener('click', () => this.spin());
 
     // Auto spin
     document.getElementById('btnAuto')?.addEventListener('click', () => {

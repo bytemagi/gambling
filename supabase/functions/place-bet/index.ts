@@ -150,7 +150,11 @@ function deriveOutcome(game: string, hex: string, amount: number, choice?: any) 
       const chunk = parseInt(hex.slice(i*2, i*2+2), 16);
       positions.push(chunk % totalCells);
     }
-    return { outcome: [...new Set(positions)], win: false, delta: 0 };
+    const unique = [...new Set(positions)];
+    while (unique.length < totalCells) {
+      unique.push(unique.length);
+    }
+    return { outcome: unique, win: false, delta: 0 };
   }
   throw new Error(`Unknown game: ${game}`);
 }
@@ -418,13 +422,15 @@ Deno.serve(async (req) => {
   let freeSpinMultiplier = 1;
 
   if (useFreeSpin) {
-    const { data: freeSpinProfile } = await db.from('profiles').select('free_spins').single();
+    const { data: freeSpinProfile } = await db.from('profiles').select('*').single();
     const currentFreeSpins = Number(freeSpinProfile?.free_spins ?? 0);
     if (!Number.isFinite(currentFreeSpins) || currentFreeSpins <= 0) {
       return new Response(JSON.stringify({ error: 'No free spins remaining' }), { status: 400, headers: commonHeaders() });
     }
     freeSpinsRemaining = currentFreeSpins - 1;
-    await db.from('profiles').update({ free_spins: freeSpinsRemaining }).eq('id', user.id);
+    if (freeSpinProfile && 'free_spins' in freeSpinProfile) {
+      await db.from('profiles').update({ free_spins: freeSpinsRemaining }).eq('id', user.id);
+    }
   } else {
     const { data: newBal, error: rpcErr } = await db.rpc('deduct_balance', { p_amount: amount });
     if (rpcErr) return new Response(JSON.stringify({ error: rpcErr.message }), { status: 400, headers: commonHeaders() });
@@ -463,9 +469,11 @@ Deno.serve(async (req) => {
   if (payout > 0) await db.rpc('credit_balance', { p_amount: payout });
 
   if (freeSpinsAwarded > 0) {
-    const { data: currentProfile } = await db.from('profiles').select('free_spins').single();
-    const updatedRemaining = Number(currentProfile?.free_spins ?? 0) + freeSpinsAwarded;
-    await db.from('profiles').update({ free_spins: updatedRemaining }).eq('id', user.id);
+    const { data: currentProfile } = await db.from('profiles').select('*').single();
+    if (currentProfile && 'free_spins' in currentProfile) {
+      const updatedRemaining = Number(currentProfile?.free_spins ?? 0) + freeSpinsAwarded;
+      await db.from('profiles').update({ free_spins: updatedRemaining }).eq('id', user.id);
+    }
   }
 
   await db.from('bets').insert({
