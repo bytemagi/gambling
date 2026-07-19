@@ -66,7 +66,14 @@ async function apiSignup(username, password, referralCode = '') {
     return { ok: false, error: 'Account created but unable to sign in automatically.' };
   }
 
-  const postProfile = await fetchProfile();
+  // The profile row is created by a database trigger on signup.
+  // Retry a few times in case the trigger hasn't committed yet.
+  let postProfile = null;
+  for (let i = 0; i < 5; i++) {
+    postProfile = await fetchProfile();
+    if (postProfile) break;
+    await new Promise(r => setTimeout(r, 300));
+  }
   currentBalance = postProfile?.balance ?? 0;
   return { ok: true, balance: currentBalance, username };
 }

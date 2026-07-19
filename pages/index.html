@@ -1205,7 +1205,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   if (!u || !p) { err.textContent = '⚠️ Fill in all fields'; return; }
   err.textContent = 'Signing in…';
   const res = await apiLogin(u, p);
-  if (res.ok) { showLobby(); updateBal(res.balance); }
+  if (res.ok) { await showLobby(); updateBal(res.balance); }
   else err.textContent = '❌ ' + res.error;
 });
 
@@ -1223,7 +1223,7 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
 
   err.textContent = 'Creating account…';
   const res = await apiSignup(u, p, ref);
-  if (res.ok) { showLobby(); updateBal(res.balance); }
+  if (res.ok) { await showLobby(); updateBal(res.balance); }
   else err.textContent = '❌ ' + res.error;
 });
 
