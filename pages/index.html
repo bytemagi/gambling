@@ -1223,7 +1223,7 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
 
   err.textContent = 'Creating account…';
   const res = await apiSignup(u, p, ref);
-  if (res.ok) { await showLobby(); updateBal(res.balance); }
+  if (res.ok) { await showLobby(); }
   else err.textContent = '❌ ' + res.error;
 });
 
@@ -1236,6 +1236,7 @@ async function showLobby() {
   const profile = await fetchProfile();
   if (profile) {
     document.getElementById('heroUsername').textContent = profile.username;
+    updateBal(profile.balance);
   }
 
   loadStats();

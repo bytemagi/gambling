@@ -67,14 +67,14 @@ async function apiSignup(username, password, referralCode = '') {
   }
 
   // The profile row is created by a database trigger on signup.
-  // Retry a few times in case the trigger hasn't committed yet.
+  // Retry several times in case the trigger hasn't committed yet.
   let postProfile = null;
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 10; i++) {
     postProfile = await fetchProfile();
     if (postProfile) break;
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise(r => setTimeout(r, 500));
   }
-  currentBalance = postProfile?.balance ?? 0;
+  currentBalance = postProfile?.balance ?? 100;
   return { ok: true, balance: currentBalance, username };
 }
 
