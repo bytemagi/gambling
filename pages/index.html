@@ -1420,8 +1420,10 @@ function createGameCard(game, category) {
 
   const featuresHtml = game.features.slice(0, 3).map(f => `<span class="game-stat"><span class="game-stat-label">${f.split(' ')[0]}</span><span class="game-stat-val">${f.split(' ').slice(1).join(' ')}</span></span>`).join('');
 
+  const slotGames = SLOTS_GAMES.map(g => g.id);
+  const href = slotGames.includes(game.id) ? `slots.html?game=${game.id}` : `${game.id}.html`;
   return `
-    <a class="game-card" href="${game.id}.html" data-type="${game.type}" data-category="${category}">
+    <a class="game-card" href="${href}" data-type="${game.type}" data-category="${category}">
       <div class="game-thumb ${thumbClass}">
         ${game.type === 'slots' ? `
           <div class="slots-glow"></div>
