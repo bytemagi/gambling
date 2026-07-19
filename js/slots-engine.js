@@ -1960,6 +1960,12 @@ const SLOTS_ENGINE = {
   setupUI() {
     const game = this.state.currentGame;
 
+    // Toggle selector vs game area
+    const selector = document.getElementById('gameSelector');
+    const gameArea = document.getElementById('gameArea');
+    if (selector) selector.style.display = 'none';
+    if (gameArea) gameArea.style.display = '';
+
     // Update game title
     const gameTitle = document.getElementById('gameTitle');
     if (gameTitle) gameTitle.textContent = game.name;
