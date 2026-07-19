@@ -1222,7 +1222,7 @@ function drawCannon(ctx, w, h) {
   ctx.stroke();
   
   // Barrel
-  const barrelGrad = ctx.createLinearGradient(0, -5(-12, -55, 0, 12, -55);
+  const barrelGrad = ctx.createLinearGradient(0, -55, 0, 12, -55);
   barrelGrad.addColorStop(0, '#3a3a5a');
   barrelGrad.addColorStop(1, '#2a2a4a');
   ctx.fillStyle = barrelGrad;

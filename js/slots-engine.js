@@ -365,7 +365,8 @@ const SLOTS_ENGINE = {
       const el = document.getElementById(id);
       if (el) el.textContent = this.state.balance.toLocaleString();
     });
-    document.getElementById('spinCost')?.textContent = this.state.totalBet.toLocaleString();
+    const spinCostEl = document.getElementById('spinCost');
+    if (spinCostEl) spinCostEl.textContent = this.state.totalBet.toLocaleString();
   },
 
   // ── REEL ANIMATION ──────────────────────────────────────────
@@ -383,7 +384,7 @@ const SLOTS_ENGINE = {
     if (!container) return;
 
     // Update each reel
-    game.reels.forEach ? game.reels.forEach((_, r) => {
+    for (let r = 0; r < game.reels; r++) {
       const reelEl = container.querySelector(`.reel[data-reel="${r}"] .reel-strip`);
       if (!reelEl) return;
 
@@ -393,7 +394,7 @@ const SLOTS_ENGINE = {
           <div class="reel-symbol" data-symbol="${sym}">${sym}</div>
         `).join('');
       }
-    }) : null;
+    }
   },
 
   getInitialVisibleSymbols() {
@@ -1337,7 +1338,7 @@ const SLOTS_ENGINE = {
       // Execute specials
       cells.forEach((cell, i) => {
         if (cell?.type === 'special') {
-          this.executeSpecial(cell.special, cells, config);
+          totalWin += this.executeSpecial(cell.special, cells, config);
           cells[i] = null; // Consume
         }
       });
@@ -1366,6 +1367,7 @@ const SLOTS_ENGINE = {
   },
 
   executeSpecial(type, cells, config) {
+    let totalWin = 0;
     const moneyCells = cells.map((c, i) => ({ cell: c, index: i })).filter(({ cell }) => cell?.type === 'money');
 
     switch (type) {
@@ -1383,9 +1385,9 @@ const SLOTS_ENGINE = {
         }
         break;
       case 'necromancer':
-        // Revive 2-5 consumed specials
         break;
     }
+    return totalWin;
   },
 
   // ── UNLIMITED FREE SPINS (MEGAWAYS) ────────────────────────
@@ -1768,9 +1770,12 @@ const SLOTS_ENGINE = {
     const game = this.state.currentGame;
 
     // Update game title
-    document.getElementById('gameTitle')?.textContent = game.name;
-    document.getElementById('gameIcon')?.textContent = game.icon;
-    document.getElementById('gameTypeBadge')?.textContent = game.type.toUpperCase();
+    const gameTitle = document.getElementById('gameTitle');
+    if (gameTitle) gameTitle.textContent = game.name;
+    const gameIcon = document.getElementById('gameIcon');
+    if (gameIcon) gameIcon.textContent = game.icon;
+    const gameTypeBadge = document.getElementById('gameTypeBadge');
+    if (gameTypeBadge) gameTypeBadge.textContent = game.type.toUpperCase();
 
     // Bet controls
     const betInput = document.getElementById('betInput');
@@ -1867,7 +1872,8 @@ const SLOTS_ENGINE = {
       this.state.bet = val;
       this.state.totalBet = this.state.bet * this.state.lines;
       e.target.value = val;
-      document.getElementById('spinCost')?.textContent = this.state.totalBet.toLocaleString();
+      const spinCost1 = document.getElementById('spinCost');
+      if (spinCost1) spinCost1.textContent = this.state.totalBet.toLocaleString();
     });
 
     // Quick bets
@@ -1876,8 +1882,10 @@ const SLOTS_ENGINE = {
         const val = parseInt(btn.dataset.bet);
         this.state.bet = val;
         this.state.totalBet = this.state.bet * this.state.lines;
-        document.getElementById('betInput').value = val;
-        document.getElementById('spinCost')?.textContent = this.state.totalBet.toLocaleString();
+        const betInput = document.getElementById('betInput');
+        if (betInput) betInput.value = val;
+        const spinCost2 = document.getElementById('spinCost');
+        if (spinCost2) spinCost2.textContent = this.state.totalBet.toLocaleString();
         document.querySelectorAll('.bet-quick-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
       });
@@ -1890,7 +1898,8 @@ const SLOTS_ENGINE = {
       val = Math.max(1, Math.min(game.paylines, val));
       this.state.lines = val;
       this.state.totalBet = this.state.bet * this.state.lines;
-      document.getElementById('spinCost')?.textContent = this.state.totalBet.toLocaleString;
+      const spinCost3 = document.getElementById('spinCost');
+      if (spinCost3) spinCost3.textContent = this.state.totalBet.toLocaleString();
     });
 
     // Feature buy
