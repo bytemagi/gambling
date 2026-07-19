@@ -104,7 +104,7 @@ async function getSession() {
 async function fetchProfile() {
   const { data, error } = await db
     .from('profiles')
-    .select('username, balance, free_spins, referral_code, referred_by')
+    .select('username, balance, referral_code, referred_by')
     .single();
   if (error) console.error('fetchProfile:', error);
   return data;
