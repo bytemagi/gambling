@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Slots · Fuckitt's Funhouse</title>
 <link rel="stylesheet" href="../css/shared.css">
 <link rel="stylesheet" href="../css/slots.css">
@@ -14,7 +14,10 @@
     <a class="header-logo-wrap" href="index.html">
       <img src="../logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse">
     </a>
-    <nav class="header-nav">
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="header-nav" id="headerNav">
       <a class="nav-link" href="index.html"><span class="nav-icon">🏠</span> Lobby</a>
       <a class="nav-link" href="fish.html"><span class="nav-icon">🐟</span> Fish Frenzy <span class="nav-badge new">NEW</span></a>
       <a class="nav-link active" href="slots.html"><span class="nav-icon">🎰</span> Slots <span class="nav-badge hot">HOT</span></a>
@@ -42,141 +45,318 @@
   </div>
 </header>
 
-<div class="page">
-  <div class="game-title-bar">
-    <h1>🎰 Slot Machine</h1>
-    <p>Spin the reels · Match symbols · Hit the Jackpot</p>
-  </div>
-
-  <div class="game-selector">
-    <div class="game-selector-title">Choose Your Game</div>
-    <div class="game-options">
-      <div class="game-option active" data-game="classic" onclick="selectGame('classic')">
-        <div class="game-option-icon">🎰</div>
-        <div class="game-option-name">Classic 7s</div>
+<div class="page page-compact">
+  <!-- Game Selector -->
+  <div class="game-selector" id="gameSelector">
+    <div class="game-selector-header">
+      <h2 class="game-selector-title">Choose Your Slot</h2>
+      <div class="game-selector-tabs" id="selectorTabs" role="tablist">
+        <button class="selector-tab active" role="tab" data-category="all">⚡ All</button>
+        <button class="selector-tab" role="tab" data-category="progressive">💰 Progressive</button>
+        <button class="selector-tab" role="tab" data-category="classic">🎰 Classic</button>
+        <button class="selector-tab" role="tab" data-category="video">🎬 Video</button>
+        <button class="selector-tab" role="tab" data-category="megaways">⚡ Megaways</button>
       </div>
-      <div class="game-option" data-game="fruit" onclick="selectGame('fruit')">
-        <div class="game-option-icon">🍒</div>
-        <div class="game-option-name">Fruit Fiesta</div>
-      </div>
-      <div class="game-option" data-game="diamond" onclick="selectGame('diamond')">
-        <div class="game-option-icon">💎</div>
-        <div class="game-option-name">Diamond Rush</div>
-      </div>
-      <div class="game-option" data-game="wild" onclick="selectGame('wild')">
-        <div class="game-option-icon">🤠</div>
-        <div class="game-option-name">Wild West</div>
-      </div>
-      <div class="game-option" data-game="neon" onclick="selectGame('neon')">
-        <div class="game-option-icon">🌃</div>
-        <div class="game-option-name">Neon Nights</div>
-      </div>
-      <div class="game-option" data-game="treasure" onclick="selectGame('treasure')">
-        <div class="game-option-icon">🏴‍☠️</div>
-        <div class="game-option-name">Treasure Quest</div>
-      </div>
-      <div class="game-option" data-game="pharaoh" onclick="selectGame('pharaoh')">
-        <div class="game-option-icon">👑</div>
-        <div class="game-option-name">Pharaoh's Riches</div>
-      </div>
+    </div>
+    <div class="game-selector-grid" id="selectorGrid" role="tabpanel">
+      <!-- Populated by JS -->
     </div>
   </div>
 
-  <div class="machine">
-    <div class="machine-top" id="machineTitle">✦ Fuckitt's Funhouse Slots ✦</div>
-    <div class="reels-container">
-      <div class="reel-col">
-        <div class="reel-label">Reel 1</div>
-        <div class="reel-window" id="rw1">
-          <div class="payline"></div>
-          <div class="reel-strip" id="rs1"><div class="reel-symbol">❓</div></div>
+  <!-- Active Game Area -->
+  <div class="game-area" id="gameArea" style="display:none">
+    <div class="game-header-bar">
+      <button class="btn-back btn-icon" id="backToSelector" aria-label="Back to game selection">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="game-info">
+        <span class="game-type-badge" id="gameTypeBadge"></span>
+        <h1 class="game-title" id="gameTitle"></h1>
+      </div>
+      <div class="game-header-actions">
+        <button class="btn-icon" id="soundBtn" aria-label="Toggle sound"><span>🔊</span></button>
+        <button class="btn-icon" id="pfBtn" aria-label="Provably Fair"><span>🔐</span></button>
+        <button class="btn-icon" id="settingsBtn" aria-label="Settings"><span>⚙️</span></button>
+      </div>
+    </div>
+
+    <!-- Jackpot Bar (for progressive) -->
+    <div class="jackpot-bar" id="jackpotBar" style="display:none">
+      <div class="jackpot-label">
+        <span class="jackpot-icon">💎</span>
+        <span>PROGRESSIVE JACKPOT</span>
+        <span class="jackpot-tiers" id="jackpotTiers"></span>
+      </div>
+      <div class="jackpot-amounts">
+        <div class="jackpot-tier mini"><span class="jt-name">MINI</span><span class="jt-amt" id="jpMini">$100</span></div>
+        <div class="jackpot-tier minor"><span class="jt-name">MINOR</span><span class="jt-amt" id="jpMinor">$500</span></div>
+        <div class="jackpot-tier major"><span class="jt-name">MAJOR</span><span class="jt-amt" id="jpMajor">$5,000</span></div>
+        <div class="jackpot-tier mega"><span class="jt-name">MEGA</span><span class="jt-amt" id="jpMega">$50,000</span></div>
+      </div>
+    </div>
+
+    <!-- Slot Machine -->
+    <div class="slot-machine" id="slotMachine">
+      <!-- Reels Container -->
+      <div class="reels-container" id="reelsContainer">
+        <!-- Reels will be generated by JS -->
+      </div>
+
+      <!-- Payline Indicators -->
+      <div class="payline-overlay" id="paylineOverlay"></div>
+
+      <!-- Win Animation Layer -->
+      <div class="win-layer" id="winLayer"></div>
+    </div>
+
+    <!-- Game Info Bar -->
+    <div class="game-info-bar">
+      <div class="info-item">
+        <span class="info-label">RTP</span>
+        <span class="info-value" id="infoRTP">96.5%</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Volatility</span>
+        <span class="info-value" id="infoVol">Medium</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Max Win</span>
+        <span class="info-value" id="infoMaxWin">5,000×</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Paylines</span>
+        <span class="info-value" id="infoLines">20</span>
+      </div>
+    </div>
+
+    <!-- Bonus Feature Display -->
+    <div class="bonus-display" id="bonusDisplay" style="display:none">
+      <div class="bonus-content">
+        <span class="bonus-icon" id="bonusIcon">🎁</span>
+        <div class="bonus-text">
+          <span class="bonus-title" id="bonusTitle">FREE SPINS</span>
+          <span class="bonus-detail" id="bonusDetail">10 Free Spins with 3× Multiplier</span>
+        </div>
+        <span class="bonus-count" id="bonusCount">0</span>
+      </div>
+    </div>
+
+    <!-- Paytable Modal Trigger -->
+    <button class="btn-ghost btn-sm" id="paytableBtn">
+      <span>💰</span> Paytable
+    </button>
+
+    <!-- Bet Panel -->
+    <div class="bet-panel">
+      <div class="bet-row">
+        <label class="bet-label">Total Bet</label>
+        <div class="bet-input-group">
+          <button class="btn-icon btn-icon-sm bet-decrease" id="betDecrease" aria-label="Decrease bet"><span>−</span></button>
+          <input type="number" class="form-input bet-input" id="betInput" value="1" min="0.1" max="100" step="0.1">
+          <button class="btn-icon btn-icon-sm bet-increase" id="betIncrease" aria-label="Increase bet"><span>+</span></button>
         </div>
       </div>
-      <div class="reel-col">
-        <div class="reel-label">Reel 2</div>
-        <div class="reel-window" id="rw2">
-          <div class="payline"></div>
-          <div class="reel-strip" id="rs2"><div class="reel-symbol">❓</div></div>
-        </div>
+      <div class="bet-quick" id="betQuick">
+        <!-- Quick bet buttons -->
       </div>
-      <div class="reel-col">
-        <div class="reel-label">Reel 3</div>
-        <div class="reel-window" id="rw3">
-          <div class="payline"></div>
-          <div class="reel-strip" id="rs3"><div class="reel-symbol">❓</div></div>
+      <div class="bet-lines" id="betLines" style="display:none">
+        <label class="bet-label">Lines</label>
+        <div class="bet-input-group">
+          <button class="btn-icon btn-icon-sm bet-decrease" id="linesDecrease"><span>−</span></button>
+          <input type="number" class="form-input bet-input" id="linesInput" value="20" min="1" max="50" step="1">
+          <button class="btn-icon btn-icon-sm bet-increase" id="linesIncrease"><span>+</span></button>
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="paytable">
-    <div class="paytable-title">Paytable</div>
-    <div class="pay-row"><span class="pay-symbols">💎💎💎</span><span class="pay-mult">20× BET — MEGA JACKPOT</span></div>
-    <div class="pay-row"><span class="pay-symbols">7️⃣7️⃣7️⃣</span><span class="pay-mult">10× BET — JACKPOT</span></div>
-    <div class="pay-row"><span class="pay-symbols">⭐⭐⭐</span><span class="pay-mult">5× BET — BIG WIN</span></div>
-    <div class="pay-row"><span class="pay-symbols">🍒🍒🍒</span><span class="pay-mult">5× BET</span></div>
-    <div class="pay-row"><span class="pay-symbols">Any pair</span><span class="pay-mult" style="color:var(--muted)">Push — bet returned</span></div>
-    <div class="pay-row"><span class="pay-symbols">No match</span><span style="color:var(--red)">Lose bet</span></div>
-  </div>
-
-  <div class="bet-panel">
-    <div class="bet-panel-title">Place Your Bet</div>
-    <div class="bet-amount-row">
-      <label>Bet $</label>
-      <input class="bet-input" type="number" id="betAmt" value="5" min="1">
+    <!-- Feature Buy (for eligible games) -->
+    <div class="feature-buy" id="featureBuy" style="display:none">
+      <span class="fb-label">Buy Feature</span>
+      <button class="btn btn-primary btn-sm" id="buyFeatureBtn">Buy Free Spins — 100×</button>
     </div>
-    <div class="quick-bets">
-      <div class="qb" onclick="setQuickBet(5)">$5</div>
-      <div class="qb" onclick="setQuickBet(10)">$10</div>
-      <div class="qb" onclick="setQuickBet(25)">$25</div>
-      <div class="qb" onclick="setQuickBet(50)">$50</div>
-      <div class="qb" onclick="halfBet()">½</div>
-      <div class="qb" onclick="doubleBet()">2×</div>
+
+    <!-- Spin Button -->
+    <div class="spin-area">
+      <button class="btn-spin btn-primary btn-xl" id="spinBtn">
+        <span class="spin-text">S P I N</span>
+        <span class="spin-cost" id="spinCost">$1.00</span>
+      </button>
+      <div class="auto-spin">
+        <label class="toggle">
+          <input type="checkbox" id="autoSpinToggle">
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="auto-label">Auto Spin</span>
+        <select class="form-select form-select-sm" id="autoCount">
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50" selected>50</option>
+          <option value="100">100</option>
+          <option value="999">∞</option>
+        </select>
+      </div>
+      <div class="turbo-toggle">
+        <label class="toggle">
+          <input type="checkbox" id="turboToggle">
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="turbo-label">Turbo</span>
+      </div>
     </div>
-    <div class="free-spin-row">
-      <span>Free Spins: <strong id="freeSpinCount">0</strong></span>
-      <button class="btn-ghost btn-free-spin" id="btnFreeSpin" onclick="toggleFreeSpin()" disabled>Use Free Spin</button>
+
+    <!-- Result Banner -->
+    <div class="result-banner idle" id="resultBanner">Set your bet and spin to play</div>
+
+    <!-- Session Stats -->
+    <div class="session-stats" id="sessionStats">
+      <div class="stat"><span class="stat-label">Session</span><span class="stat-value" id="sessSpins">0</span><span class="stat-sublabel">Spins</span></div>
+      <div class="stat"><span class="stat-label">Wagered</span><span class="stat-value" id="sessWagered">$0</span></div>
+      <div class="stat"><span class="stat-label">Won</span><span class="stat-value positive" id="sessWon">$0</span></div>
+      <div class="stat"><span class="stat-label">Net</span><span class="stat-value" id="sessNet">$0</span></div>
+      <div class="stat"><span class="stat-label">Biggest</span><span class="stat-value gold" id="sessBig">$0</span></div>
     </div>
-    <button class="btn-spin" id="btnSpin" onclick="spin()">S P I N</button>
-  </div>
 
-  <div class="result-banner idle" id="result">Spin the reels to play</div>
+    <!-- History -->
+    <div class="history-panel">
+      <div class="history-header">
+        <h3 class="history-title">Recent Spins</h3>
+        <button class="btn-ghost btn-sm" id="clearHistory">Clear</button>
+      </div>
+      <div class="history-list" id="historyList"></div>
+    </div>
 
-  <div class="history">
-    <div class="history-title">Recent Spins</div>
-    <div class="history-list" id="historyList"></div>
-  </div>
-
-  <div class="pf-widget" id="pfWidget">
-    <div class="pf-title">🔐 Provably Fair</div>
+    <!-- Provably Fair Widget -->
+    <div class="pf-widget" id="pfWidget">
+      <div class="pf-title">🔐 Provably Fair</div>
+      <div class="pf-row"><span class="pf-label">Server Seed Hash:</span><span class="pf-val pf-hash" id="pfHash">—</span></div>
+      <div class="pf-row"><span class="pf-label">Client Seed:</span><input type="text" class="pf-input" id="pfClientSeed" readonly></div>
+      <div class="pf-row"><span class="pf-label">Nonce:</span><span class="pf-val" id="pfNonce">—</span></div>
+      <button class="pf-btn pf-verify-btn" id="pfVerifyBtn">Verify Last Spin</button>
+      <div class="pf-verify-result" id="pfVerifyResult"></div>
+    </div>
   </div>
 </div>
 
-<footer class="site-footer" style="padding:36px 24px 28px;text-align:center;margin-top:60px">
-  <img src="../logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse" style="margin:0 auto 18px">
-  <div class="footer-links" style="margin-bottom:18px">
-    <a href="index.html">🏠 Lobby</a>
-    <a href="slots.html">🎰 Slots</a>
-    <a href="crash.html">🚀 Crash</a>
-    <a href="mines.html">💣 Mines</a>
-    <a href="coin.html">🪙 Coin</a>
-    <a href="dice.html">🎲 Dice</a>
-    <a href="leaderboard.html">🏆 Leaderboard</a>
-    <a href="wallet.html">💳 Wallet</a>
-    <a href="history.html">📋 History</a>
+<!-- Paytable Modal -->
+<div class="modal-overlay" id="paytableModal" style="display:none" onclick="closeModalOnBackdrop(event,'paytableModal')">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h2 class="modal-title">💰 Paytable</h2>
+      <button class="modal-close" onclick="document.getElementById('paytableModal').style.display='none'">✕</button>
+    </div>
+    <div class="modal-body" id="paytableBody"></div>
   </div>
-  <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-    <span class="footer-badge green">✓ Provably Fair</span>
-    <span class="footer-badge gold">⚡ Instant Payouts</span>
-    <span class="footer-badge">🔒 Secure · Est. 2024</span>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal" style="display:none" onclick="closeModalOnBackdrop(event,'settingsModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">⚙️ Game Settings</h2>
+      <button class="modal-close" onclick="document.getElementById('settingsModal').style.display='none'">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="setting-item">
+        <label class="setting-label">Sound Effects</label>
+        <label class="toggle"><input type="checkbox" id="settingSound" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="setting-item">
+        <label class="setting-label">Music</label>
+        <label class="toggle"><input type="checkbox" id="settingMusic"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="setting-item">
+        <label class="setting-label">Turbo Spin</label>
+        <label class="toggle"><input type="checkbox" id="settingTurbo"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="setting-item">
+        <label class="setting-label">Screen Shake on Win</label>
+        <label class="toggle"><input type="checkbox" id="settingShake" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="setting-item">
+        <label class="setting-label">Auto Spin Stop on Feature</label>
+        <label class="toggle"><input type="checkbox" id="settingStopFeature" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="setting-item">
+        <label class="setting-label">Auto Spin Stop on Big Win</label>
+        <label class="toggle"><input type="checkbox" id="settingStopBigWin" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="setting-item">
+        <label class="setting-label">Auto Spin Stop on Loss Limit</label>
+        <label class="toggle"><input type="checkbox" id="settingStopLoss"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="setting-item">
+        <label class="setting-label">Loss Limit ($)</label>
+        <input type="number" class="form-input form-input-sm" id="settingLossLimit" value="100" min="10" max="10000">
+      </div>
+      <div class="setting-item">
+        <label class="setting-label">Single Win Limit ($)</label>
+        <input type="number" class="form-input form-input-sm" id="settingWinLimit" value="1000" min="10" max="100000">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="document.getElementById('settingsModal').style.display='none'">Close</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+    </div>
   </div>
-  <div class="footer-copy">© 2024 Fuckitt's Funhouse · For entertainment purposes only</div>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <img src="../logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse">
+      <p class="footer-brand-desc">Fuckitt's Funhouse — provably fair casino games for entertainment. Every result is cryptographically verifiable. Play smart, win big, no regrets.</p>
+      <div class="footer-social">
+        <a class="footer-social-btn" href="#" title="Twitter" aria-label="Twitter">𝕏</a>
+        <a class="footer-social-btn" href="#" title="Discord" aria-label="Discord">⚡</a>
+        <a class="footer-social-btn" href="#" title="Telegram" aria-label="Telegram">✈</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Games</div>
+      <ul class="footer-col-links">
+        <li><a href="slots.html">🎰 Slot Machines</a></li>
+        <li><a href="crash.html">🚀 Crash</a></li>
+        <li><a href="mines.html">💣 Mines</a></li>
+        <li><a href="coin.html">🪙 Coin Flip</a></li>
+        <li><a href="dice.html">🎲 Dice Roll</a></li>
+        <li><a href="fish.html">🐟 Fish Frenzy</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-col-title">Account</div>
+      <ul class="footer-col-links">
+        <li><a href="wallet.html">💳 Wallet</a></li>
+        <li><a href="history.html">📋 Bet History</a></li>
+        <li><a href="leaderboard.html">🏆 Leaderboard</a></li>
+        <li><a href="#" onclick="doLogout();return false">🚪 Sign Out</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-col-title">Info</div>
+      <ul class="footer-col-links">
+        <li><a href="history.html">🔐 Provably Fair</a></li>
+        <li><a href="#">📜 Terms of Service</a></li>
+        <li><a href="#">🛡️ Responsible Gaming</a></li>
+        <li><a href="#">📬 Contact</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="footer-copy">© 2024 Fuckitt's Funhouse · For entertainment purposes only. No real money is involved. All results are provably fair.</div>
+    <div class="footer-badges">
+      <span class="footer-badge green">✓ Provably Fair</span>
+      <span class="footer-badge gold">⚡ Instant Payouts</span>
+      <span class="footer-badge blue">🔒 Secure</span>
+      <span class="footer-badge purple">Est. 2024</span>
+    </div>
+  </div>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/shared.js"></script>
 <script src="../js/sounds.js"></script>
 <script src="../js/provably-fair.js"></script>
+<script src="../js/slots-engine.js"></script>
 <script src="../js/slots.js"></script>
 </body>
 </html>

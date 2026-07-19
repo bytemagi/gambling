@@ -283,19 +283,183 @@ function soundWildSubstitute() {
   });
 }
 
-// Bounty bonus sound (Western-style)
-function soundBountyBonus() {
+// ── Fish Frenzy Sounds ─────────────────────────────────────────
+function soundShoot() {
   _play(ac => {
-    [300, 400, 500, 600, 800].forEach((freq, i) => {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = 'square'; o.frequency.value = 400;
+    o.frequency.exponentialRampToValueAtTime(800, ac.currentTime + 0.05);
+    g.gain.setValueAtTime(0.1, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.1);
+    o.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime + 0.1);
+  });
+}
+
+function soundHit() {
+  _play(ac => {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = 'sine'; o.frequency.value = 800;
+    o.frequency.linearRampToValueAtTime(1200, ac.currentTime + 0.05);
+    g.gain.setValueAtTime(0.08, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.1);
+    o.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime + 0.1);
+  });
+}
+
+function soundCatch() {
+  _play(ac => {
+    [600, 800, 1000, 1200].forEach((freq, i) => {
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = 'triangle'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0, ac.currentTime + i*0.03);
+      g.gain.linearRampToValueAtTime(0.1, ac.currentTime + i*0.03 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + i*0.03 + 0.2);
+      o.connect(g); g.connect(ac.destination);
+      o.start(ac.currentTime + i*0.03);
+      o.stop(ac.currentTime + i*0.03 + 0.2);
+    });
+  });
+}
+
+function soundBigWin() {
+  _play(ac => {
+    [523, 659, 784, 1047, 1319, 1568, 2093].forEach((freq, i) => {
       const o = ac.createOscillator();
       const g = ac.createGain();
       o.type = 'square'; o.frequency.value = freq;
       g.gain.setValueAtTime(0, ac.currentTime + i*0.06);
-      g.gain.linearRampToValueAtTime(0.1, ac.currentTime + i*0.06 + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + i*0.06 + 0.3);
+      g.gain.linearRampToValueAtTime(0.15, ac.currentTime + i*0.06 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + i*0.06 + 0.6);
       o.connect(g); g.connect(ac.destination);
       o.start(ac.currentTime + i*0.06);
-      o.stop(ac.currentTime + i*0.06 + 0.3);
+      o.stop(ac.currentTime + i*0.06 + 0.6);
     });
   });
 }
+
+function soundBoss() {
+  _play(ac => {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = 'sawtooth'; o.frequency.value = 80;
+    o.frequency.exponentialRampToValueAtTime(40, ac.currentTime + 1);
+    g.gain.setValueAtTime(0.2, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 1);
+    o.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime + 1);
+  });
+}
+
+function soundCharge() {
+  _play(ac => {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(200, ac.currentTime);
+    o.frequency.exponentialRampToValueAtTime(1000, ac.currentTime + 0.5);
+    g.gain.setValueAtTime(0, ac.currentTime);
+    g.gain.linearRampToValueAtTime(0.15, ac.currentTime + 0.4);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.6);
+    o.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime + 0.6);
+  });
+}
+
+function soundFreeze() {
+  _play(ac => {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = 'sine'; o.frequency.value = 1200;
+    o.frequency.exponentialRampToValueAtTime(400, ac.currentTime + 0.5);
+    g.gain.setValueAtTime(0.1, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.5);
+    o.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime + 0.5);
+  });
+}
+
+function soundUpgrade() {
+  _play(ac => {
+    [400, 500, 600, 800, 1000, 1200].forEach((freq, i) => {
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = 'triangle'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0, ac.currentTime + i*0.04);
+      g.gain.linearRampToValueAtTime(0.12, ac.currentTime + i*0.04 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + i*0.04 + 0.3);
+      o.connect(g); g.connect(ac.destination);
+      o.start(ac.currentTime + i*0.04);
+      o.stop(ac.currentTime + i*0.04 + 0.3);
+    });
+  });
+}
+
+function soundLock() {
+  _play(ac => {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = 'sine'; o.frequency.value = 600;
+    o.frequency.linearRampToValueAtTime(900, ac.currentTime + 0.08);
+    g.gain.setValueAtTime(0.1, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.12);
+    o.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime + 0.12);
+  });
+}
+
+function soundMiss() {
+  _play(ac => {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = 'sine'; o.frequency.value = 200;
+    o.frequency.exponentialRampToValueAtTime(80, ac.currentTime + 0.2);
+    g.gain.setValueAtTime(0.08, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.2);
+    o.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime + 0.2);
+  });
+}
+
+function soundBossPhase() {
+  _play(ac => {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = 'sawtooth'; o.frequency.value = 120;
+    o.frequency.exponentialRampToValueAtTime(60, ac.currentTime + 0.5);
+    g.gain.setValueAtTime(0.15, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.5);
+    o.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime + 0.5);
+  });
+}
+
+// ── Global playSound wrapper ───────────────────────────────────
+const soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+
+function playSound(name) {
+  if (!soundEnabled) return;
+  const fn = window[name];
+  if (typeof fn === 'function') {
+    try { fn(); } catch(e) {}
+  }
+}
+
+// Export fish sounds
+window.soundShoot = soundShoot;
+window.soundHit = soundHit;
+window.soundCatch = soundCatch;
+window.soundBigWin = soundBigWin;
+window.soundBoss = soundBoss;
+window.soundCharge = soundCharge;
+window.soundFreeze = soundFreeze;
+window.soundUpgrade = soundUpgrade;
+window.soundLock = soundLock;
+window.soundMiss = soundMiss;
+window.soundBossPhase = soundBossPhase;
+
+// Export wrapper
+window.playSound = playSound;

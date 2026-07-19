@@ -3,362 +3,183 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>🐟 Fish Frenzy</title>
+<title>Fish Frenzy · Fuckitt's Funhouse</title>
 <link rel="stylesheet" href="../css/shared.css">
-<style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  overflow: hidden;
-  background: linear-gradient(180deg, #001a33 0%, #003366 50%, #004d99 100%);
-  font-family: 'Cinzel', serif;
-  touch-action: none;
-}
-
-#gameCanvas {
-  display: block;
-  cursor: none;
-}
-
-.game-ui {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  right: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  pointer-events: none;
-  z-index: 100;
-}
-
-.score-panel {
-  background: rgba(0, 0, 0, 0.7);
-  border: 2px solid var(--gold);
-  border-radius: 12px;
-  padding: 12px 20px;
-  color: var(--gold);
-  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
-}
-
-.score-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-  font-size: 1.1rem;
-}
-
-.score-item:last-child {
-  margin-bottom: 0;
-}
-
-.score-label {
-  color: var(--muted);
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.score-value {
-  font-weight: 700;
-  font-size: 1.3rem;
-  color: var(--gold);
-}
-
-.level-indicator {
-  background: rgba(0, 0, 0, 0.7);
-  border: 2px solid var(--green);
-  border-radius: 12px;
-  padding: 12px 20px;
-  color: var(--green);
-  text-align: right;
-  box-shadow: 0 4px 20px rgba(46, 204, 113, 0.3);
-}
-
-.level-title {
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 4px;
-}
-
-.level-value {
-  font-size: 1.8rem;
-  font-weight: 700;
-}
-
-.progress-bar {
-  width: 100%;
-  height: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  margin-top: 8px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--green), var(--gold));
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.start-screen, .game-over-screen {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.85);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(10px);
-}
-
-.screen-content {
-  text-align: center;
-  color: white;
-  max-width: 600px;
-  padding: 40px;
-}
-
-.game-title {
-  font-size: 4rem;
-  color: var(--gold);
-  margin-bottom: 20px;
-  text-shadow: 0 0 30px rgba(212, 175, 55, 0.8);
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-
-.game-subtitle {
-  font-size: 1.2rem;
-  color: var(--muted);
-  margin-bottom: 40px;
-}
-
-.start-btn, .restart-btn {
-  background: linear-gradient(180deg, #2fd66f 0%, #1faa56 100%);
-  color: #06120b;
-  border: none;
-  padding: 18px 50px;
-  font-size: 1.3rem;
-  font-weight: 700;
-  border-radius: 12px;
-  cursor: pointer;
-  font-family: 'Cinzel', serif;
-  box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
-  transition: all 0.3s ease;
-  pointer-events: all;
-}
-
-.start-btn:hover, .restart-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(46, 204, 113, 0.6);
-}
-
-.instructions {
-  margin-top: 40px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  border: 1px solid var(--border);
-}
-
-.instructions h3 {
-  color: var(--gold);
-  margin-bottom: 15px;
-  font-size: 1.2rem;
-}
-
-.instructions ul {
-  list-style: none;
-  color: var(--muted);
-  font-size: 0.95rem;
-  line-height: 1.8;
-}
-
-.instructions li:before {
-  content: "🐟 ";
-  margin-right: 8px;
-}
-
-.final-score {
-  font-size: 3rem;
-  color: var(--gold);
-  margin: 20px 0;
-  text-shadow: 0 0 20px rgba(212, 175, 55, 0.8);
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
-  margin: 30px 0;
-}
-
-.stat-box {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 15px;
-}
-
-.stat-label {
-  color: var(--muted);
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 5px;
-}
-
-.stat-value {
-  color: var(--gold);
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.powerup-indicator {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.7);
-  border: 2px solid var(--gold);
-  border-radius: 12px;
-  padding: 10px 20px;
-  color: var(--gold);
-  font-size: 1rem;
-  display: none;
-  z-index: 100;
-  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
-}
-
-.powerup-indicator.active {
-  display: block;
-  animation: powerupPulse 1s infinite;
-}
-
-@keyframes powerupPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-
-.hidden {
-  display: none !important;
-}
-</style>
+<link rel="stylesheet" href="../css/fish.css">
 </head>
 <body>
-<canvas id="gameCanvas"></canvas>
 
-<div class="game-ui">
-  <div class="score-panel">
-    <div class="score-item">
-      <span class="score-label">Score:</span>
-      <span class="score-value" id="score">0</span>
+<header class="site-header">
+  <div class="header-top">
+    <a class="header-logo-wrap" href="index.html">
+      <img src="../logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse">
+    </a>
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="header-nav" id="headerNav">
+      <a class="nav-link" href="index.html"><span class="nav-icon">🏠</span> Lobby</a>
+      <a class="nav-link active" href="fish.html"><span class="nav-icon">🐟</span> Fish Frenzy <span class="nav-badge new">NEW</span></a>
+      <a class="nav-link" href="slots.html"><span class="nav-icon">🎰</span> Slots</a>
+      <a class="nav-link" href="crash.html"><span class="nav-icon">🚀</span> Crash</a>
+      <a class="nav-link" href="mines.html"><span class="nav-icon">💣</span> Mines</a>
+      <a class="nav-link" href="coin.html"><span class="nav-icon">🪙</span> Coin Flip</a>
+      <a class="nav-link" href="dice.html"><span class="nav-icon">🎲</span> Dice</a>
+      <a class="nav-link" href="leaderboard.html"><span class="nav-icon">🏆</span> Leaderboard</a>
+      <a class="nav-link" href="wallet.html"><span class="nav-icon">💳</span> Wallet</a>
+    </nav>
+    <div class="header-right">
+      <div class="balance-chip">
+        <span class="balance-chip-icon">💰</span>
+        <div class="balance-chip-inner">
+          <span class="balance-chip-label">Balance</span>
+          <span class="balance-chip-amount">$<span id="bal">0</span></span>
+        </div>
+      </div>
+      <div class="user-chip">
+        <span class="dot online" id="statusDot"></span>
+        <span id="userLabel"></span>
+      </div>
+      <button class="btn-ghost" onclick="doLogout()">Sign Out</button>
     </div>
-    <div class="score-item">
-      <span class="score-label">Fish Size:</span>
-      <span class="score-value" id="size">1.0x</span>
+  </div>
+</header>
+
+<div class="fish-game-page">
+  <div class="game-header">
+    <div class="game-title-area">
+      <h1>🐟 Fish Frenzy</h1>
+      <p class="game-subtitle">Shoot fish · Win credits · Hunt the boss</p>
+    </div>
+    <div class="game-stats-bar">
+      <div class="stat-item">
+        <span class="stat-label">Bet/Shot</span>
+        <span class="stat-value" id="betPerShot">$1</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Cannon</span>
+        <span class="stat-value" id="cannonLevel">Lv.1</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Multiplier</span>
+        <span class="stat-value" id="cannonMultiplier">1×</span>
+      </div>
     </div>
   </div>
 
-  <div class="level-indicator">
-    <div class="level-title">Level</div>
-    <div class="level-value" id="level">1</div>
-    <div class="progress-bar">
-      <div class="progress-fill" id="levelProgress" style="width: 0%"></div>
-    </div>
+  <div class="game-main">
+    <aside class="sidebar-left" id="sidebarLeft">
+      <div class="panel fish-types-panel">
+        <h3>🎯 Fish Guide</h3>
+        <div class="fish-list" id="fishList"></div>
+      </div>
+      <div class="panel powerups-panel">
+        <h3>⚡ Power-Ups</h3>
+        <div class="powerup-grid" id="powerupGrid"></div>
+      </div>
+    </aside>
+
+    <main class="game-canvas-area">
+      <canvas id="gameCanvas" class="game-canvas"></canvas>
+      <div class="canvas-overlay" id="canvasOverlay">
+        <div class="aim-line" id="aimLine"></div>
+        <div class="hit-effect-layer" id="hitEffectLayer"></div>
+        <div class="floating-numbers" id="floatingNumbers"></div>
+      </div>
+      <div class="boss-banner" id="bossBanner" style="display:none">
+        <span class="boss-icon">🐋</span>
+        <span class="boss-text">BOSS APPEARED: <strong id="bossName">Golden Whale</strong></span>
+        <span class="boss-hp-bar"><span class="boss-hp-fill" id="bossHpFill"></span></span>
+      </div>
+    </main>
+
+    <aside class="sidebar-right" id="sidebarRight">
+      <div class="panel bet-panel">
+        <h3>💰 Bet Control</h3>
+        <div class="bet-control">
+          <label>Bet per Shot: $<span id="betDisplay">1</span></label>
+          <input type="range" id="betSlider" min="1" max="100" value="1" step="1">
+          <div class="quick-bets">
+            <button class="qb" data-bet="1">$1</button>
+            <button class="qb" data-bet="5">$5</button>
+            <button class="qb" data-bet="10">$10</button>
+            <button class="qb" data-bet="25">$25</button>
+            <button class="qb" data-bet="50">$50</button>
+            <button class="qb" data-bet="100">$100</button>
+          </div>
+        </div>
+        <div class="cannon-upgrade">
+          <button class="btn-upgrade" id="upgradeCannon" disabled>
+            <span>Upgrade Cannon</span>
+            <span class="upgrade-cost" id="upgradeCost">$500</span>
+          </button>
+          <div class="cannon-progress">
+            <div class="cannon-progress-bar" id="cannonProgressBar"></div>
+          </div>
+          <p class="cannon-hint" id="cannonHint">Reach $500 won to unlock Lv.2</p>
+        </div>
+      </div>
+
+      <div class="panel session-panel">
+        <h3>📊 Session Stats</h3>
+        <div class="session-grid">
+          <div class="session-stat"><span class="ss-label">Shots Fired</span><span class="ss-value" id="statShots">0</span></div>
+          <div class="session-stat"><span class="ss-label">Fish Caught</span><span class="ss-value" id="statCaught">0</span></div>
+          <div class="session-stat"><span class="ss-label">Total Wagered</span><span class="ss-value" id="statWagered">$0</span></div>
+          <div class="session-stat"><span class="ss-label">Total Won</span><span class="ss-value" id="statWon">$0</span></div>
+          <div class="session-stat"><span class="ss-label">Net P&L</span><span class="ss-value" id="statNet">$0</span></div>
+          <div class="session-stat"><span class="ss-label">Biggest Win</span><span class="ss-value" id="statBigWin">$0</span></div>
+        </div>
+      </div>
+
+      <div class="panel recent-wins-panel">
+        <h3>🏆 Recent Catches</h3>
+        <div class="recent-wins-list" id="recentWinsList"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="game-footer-controls">
+    <button class="btn-cannon btn-auto" id="btnAutoFire" title="Auto Fire (Hold)">
+      <span class="btn-icon">🎯</span> Auto Fire
+    </button>
+    <button class="btn-cannon btn-special" id="btnSpecial" disabled title="Special Weapon">
+      <span class="btn-icon" id="specialIcon">⚡</span> <span id="specialText">Charge</span>
+    </button>
+    <button class="btn-cannon btn-lock" id="btnLockTarget" title="Lock Target">
+      <span class="btn-icon">🔒</span> Lock
+    </button>
+    <button class="btn-cannon btn-freeze" id="btnFreeze" disabled title="Freeze Time">
+      <span class="btn-icon">❄️</span> Freeze
+    </button>
   </div>
 </div>
 
-<div class="powerup-indicator" id="powerupIndicator">
-  ⚡ INVINCIBLE!
-</div>
-
-<!-- Start Screen -->
-<div class="start-screen" id="startScreen">
-  <div class="screen-content">
-    <h1 class="game-title">🐟 Fish Frenzy</h1>
-    <p class="game-subtitle">Eat smaller fish. Avoid bigger fish. Survive!</p>
-    
-    <button class="start-btn" id="startBtn">Start Game</button>
-
-    <div class="instructions">
-      <h3>How to Play</h3>
-      <ul>
-        <li><strong>Mouse/Touch:</strong> Move your fish</li>
-        <li><strong>Eat smaller fish</strong> to grow and score points</li>
-        <li><strong>Avoid larger fish</strong> - they will eat you!</li>
-        <li><strong>Collect power-ups</strong> for special abilities</li>
-        <li><strong>Progress through levels</strong> as you score points</li>
-        <li><strong>Become the biggest fish</strong> in the ocean!</li>
-      </ul>
-    </div>
+<footer class="site-footer" style="padding:36px 24px 28px;text-align:center;margin-top:60px">
+  <img src="../logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse" style="margin:0 auto 18px">
+  <div class="footer-links" style="margin-bottom:18px">
+    <a href="index.html">🏠 Lobby</a>
+    <a href="slots.html">🎰 Slots</a>
+    <a href="crash.html">🚀 Crash</a>
+    <a href="mines.html">💣 Mines</a>
+    <a href="coin.html">🪙 Coin</a>
+    <a href="dice.html">🎲 Dice</a>
+    <a href="leaderboard.html">🏆 Leaderboard</a>
+    <a href="wallet.html">💳 Wallet</a>
+    <a href="history.html">📋 History</a>
   </div>
-</div>
-
-<!-- Game Over Screen -->
-<div class="game-over-screen hidden" id="gameOverScreen">
-  <div class="screen-content">
-    <h1 class="game-title">Game Over</h1>
-    <p class="game-subtitle">You were eaten!</p>
-    
-    <div class="final-score" id="finalScore">0</div>
-    <p style="color: var(--muted); margin-bottom: 20px;">Final Score</p>
-
-    <div class="stats-grid">
-      <div class="stat-box">
-        <div class="stat-label">Fish Eaten</div>
-        <div class="stat-value" id="fishEaten">0</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Max Size</div>
-        <div class="stat-value" id="maxSize">1.0x</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Level Reached</div>
-        <div class="stat-value" id="levelReached">1</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Time Survived</div>
-        <div class="stat-value" id="timeSurvived">0s</div>
-      </div>
-    </div>
-
-    <button class="restart-btn" id="restartBtn">Play Again</button>
+  <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+    <span class="footer-badge green">✓ Provably Fair</span>
+    <span class="footer-badge gold">⚡ Instant Payouts</span>
+    <span class="footer-badge">🔒 Secure · Est. 2024</span>
   </div>
-</div>
+  <div class="footer-copy">© 2024 Fuckitt's Funhouse · For entertainment purposes only</div>
+</footer>
 
-<script src="../js/fish-game.js"></script>
-<script>
-// Start game when button clicked
-document.getElementById('startBtn').addEventListener('click', startGame);
-document.getElementById('restartBtn').addEventListener('click', restartGame);
-
-function startGame() {
-  document.getElementById('startScreen').classList.add('hidden');
-  if (typeof FishGame !== 'undefined') {
-    FishGame.start();
-  }
-}
-
-function restartGame() {
-  document.getElementById('gameOverScreen').classList.add('hidden');
-  if (typeof FishGame !== 'undefined') {
-    FishGame.restart();
-  }
-}
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/shared.js"></script>
+<script src="../js/sounds.js"></script>
+<script src="../js/provably-fair.js"></script>
+<script src="../js/fish.js"></script>
 </body>
 </html>

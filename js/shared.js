@@ -23,53 +23,68 @@ function escapeHtml(s) {
 
 // ── Auth ──────────────────────────────────────────────────────
 
-async function apiLogin(username, password, referralCode = '') {
+async function apiLogin(username, password) {
   const email = username.toLowerCase() + '@funhouse.local';
-  const normalizedReferralCode = (referralCode || '').trim().toUpperCase();
-  const { data, error } = await db.auth.signInWithPassword({ email, password });
+  const { error } = await db.auth.signInWithPassword({ email, password });
 
-  if (!error) {
-    const profile = await fetchProfile();
-    currentBalance = profile.balance;
-    return { ok: true, balance: profile.balance, username: profile.username };
+  if (error) {
+    return { ok: false, error: error.message };
   }
 
-  // Fix #3 — only auto-register when the account genuinely doesn't exist
-  if (error.message.toLowerCase().includes('invalid login credentials')) {
-    const { data: signUpData, error: signUpError } = await db.auth.signUp({
-      email, password,
-      options: { data: { username, referral_code: normalizedReferralCode } }
+  const profile = await fetchProfile();
+  currentBalance = profile.balance;
+  return { ok: true, balance: profile.balance, username: profile.username };
+}
+
+async function apiSignup(username, password, referralCode = '') {
+  const email = username.toLowerCase() + '@funhouse.local';
+  const normalizedReferralCode = String(referralCode || '').trim().toUpperCase();
+
+  // Block sign-up if the username/email already exists
+  const { error: signInError } = await db.auth.signInWithPassword({ email, password: 'probe' });
+  const alreadyExists = !signInError || !signInError.message.toLowerCase().includes('invalid login credentials');
+  if (alreadyExists) {
+    return { ok: false, error: 'Username already taken. Try logging in instead.' };
+  }
+
+  const { data: signUpData, error: signUpError } = await db.auth.signUp({
+    email,
+    password,
+    options: { data: { username, referral_code: normalizedReferralCode } }
+  });
+
+  if (signUpError) {
+    return { ok: false, error: signUpError.message };
+  }
+
+  // Immediately sign in so we have a session for the bonus edge function
+  const signInResult = await db.auth.signInWithPassword({ email, password });
+  if (signInResult.error || !signInResult.data?.session?.access_token) {
+    return { ok: false, error: 'Account created but unable to sign in automatically.' };
+  }
+
+  try {
+    await fetch(`${SUPABASE_URL}/functions/v1/handle-signup-bonus`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${signInResult.data.session.access_token}`,
+      },
+      body: JSON.stringify({
+        userId: signInResult.data.user?.id || signUpData?.user?.id,
+        referralCode: normalizedReferralCode,
+        username,
+      }),
     });
-    if (signUpError) return { ok: false, error: signUpError.message };
-
-    const signInResult = await db.auth.signInWithPassword({ email, password });
-    if (!signInResult.error && signInResult.data?.session?.access_token) {
-      try {
-        await fetch(`${SUPABASE_URL}/functions/v1/handle-signup-bonus`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${signInResult.data.session.access_token}`,
-          },
-          body: JSON.stringify({
-            userId: signInResult.data.user?.id || signUpData?.user?.id,
-            referralCode: normalizedReferralCode,
-            username,
-          }),
-        });
-      } catch (bonusErr) {
-        console.warn('Referral bonus processing failed:', bonusErr);
-      }
-    }
-
-    // Wait a moment for the edge function to complete, then fetch actual balance
-    await new Promise(r => setTimeout(r, 500));
-    const postProfile = await fetchProfile();
-    currentBalance = postProfile?.balance ?? 100;
-    return { ok: true, balance: currentBalance, username };
+  } catch (bonusErr) {
+    console.warn('Referral bonus processing failed:', bonusErr);
   }
 
-  return { ok: false, error: error.message };
+  // Wait briefly for the edge function to complete, then fetch actual balance
+  await new Promise(r => setTimeout(r, 500));
+  const postProfile = await fetchProfile();
+  currentBalance = postProfile?.balance ?? 100;
+  return { ok: true, balance: currentBalance, username };
 }
 
 async function apiLogout() {
@@ -114,7 +129,8 @@ async function apiPlaceBet(game, amount, choice, providedClientSeed = null, prov
 
     // Validate balance before placing bet
     const balance = await apiGetBalance();
-    if (!(choice && choice.useFreeSpin) && amount > balance) {
+    const isFreeSpin = choice && typeof choice === 'object' && choice.useFreeSpin === true;
+    if (!isFreeSpin && amount > balance) {
       return { ok: false, error: 'Insufficient balance' };
     }
 
@@ -153,13 +169,13 @@ async function apiPlaceBet(game, amount, choice, providedClientSeed = null, prov
       return { ok: false, error: 'Invalid server response' };
     }
 
-  currentBalance = data.balance;
-  if (typeof window !== 'undefined' && typeof data.freeSpinsRemaining === 'number') {
-    localStorage.setItem('freeSpins', String(data.freeSpinsRemaining));
-    if (typeof window.updateFreeSpinDisplay === 'function') {
-      window.updateFreeSpinDisplay();
+    currentBalance = data.balance;
+    if (typeof window !== 'undefined' && typeof data.freeSpinsRemaining === 'number') {
+      localStorage.setItem('freeSpins', String(data.freeSpinsRemaining));
+      if (typeof window.updateFreeSpinDisplay === 'function') {
+        window.updateFreeSpinDisplay();
+      }
     }
-  }
     return { ok: true, ...data };
   } catch (err) {
     return { ok: false, error: 'Unexpected error while placing bet' };
