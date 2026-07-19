@@ -33,6 +33,20 @@ const SLOT_GAME_CONFIGS: Record<string, { symbols: string[]; payouts: Record<str
       '🧊': 5
     }
   },
+  megaways: {
+    // Megaways Madness — same symbols as neon, engine ID is 'megaways'
+    symbols: ['🕶️','🌃','💎','🎧','🔋','🧊','⚡','★'],
+    payouts: {
+      '⚡': 50,
+      '💎': 25,
+      '★': 15,
+      '🎧': 10,
+      '🕶️': 8,
+      '🌃': 6,
+      '🔋': 5,
+      '🧊': 4
+    }
+  },
   treasure: {
     // Treasure Quest — mid-volatility pirate/adventure theme with scatter bonus
     symbols: ['🏴‍☠️','🗺️','🪙','💰','⚓','🦜','🔑'],
@@ -57,6 +71,20 @@ const SLOT_GAME_CONFIGS: Record<string, { symbols: string[]; payouts: Record<str
       '📜': 8,
       '🪙': 6,
       '🪨': 4
+    }
+  },
+  megalodon: {
+    // Megalodon — deep sea shark theme, extreme volatility with Feeding Frenzy cascades
+    symbols: ['⭐','🪸','🤿','💰','🪼','🐙','🦈','🔱'],
+    payouts: {
+      '🦈': 50,
+      '🔱': 40,
+      '🐙': 20,
+      '🪼': 12,
+      '💰': 10,
+      '🤿': 8,
+      '🪸': 6,
+      '⭐': 4
     }
   }
 };
@@ -408,6 +436,24 @@ Deno.serve(async (req) => {
       freeSpinsAwarded = 3;
       freeSpinMultiplier = 2;
       payout = Math.round(payout * 1.5);
+    }
+  }
+
+  if (game === 'slots' && choice?.gameType === 'megaways') {
+    const isScatter = result.outcome?.[0] === '⚡' && result.outcome?.[1] === '⚡' && result.outcome?.[2] === '⚡';
+    if (isScatter) {
+      freeSpinsAwarded = 12;
+      freeSpinMultiplier = 2;
+      payout = Math.round(payout * 2);
+    }
+  }
+
+  if (game === 'slots' && choice?.gameType === 'megalodon') {
+    const isScatter = result.outcome?.[0] === '🔱' && result.outcome?.[1] === '🔱' && result.outcome?.[2] === '🔱';
+    if (isScatter) {
+      freeSpinsAwarded = 10;
+      freeSpinMultiplier = 2;
+      payout = Math.round(payout * 2);
     }
   }
 

@@ -257,6 +257,48 @@ const SLOTS_ENGINE = {
         gamble: { type: 'color', maxDouble: 5 },
       }
     },
+
+    megalodon: {
+      id: 'megalodon',
+      name: 'Megalodon',
+      icon: '🦈',
+      type: 'video',
+      reels: 5, rows: 3, paylines: 25,
+      theme: 'cyan',
+      rtp: 95.5, volatility: 'Extreme',
+      minBet: 0.5, maxBet: 500, maxMult: 2000,
+      features: ['Shark Attack', 'Feeding Frenzy', 'Mega Jackpot'],
+      symbols: {
+        '🦈': { value: 200, weight: 5, special: 'wild' },
+        '🐙': { value: 100, weight: 8 },
+        '🪼': { value: 50, weight: 12 },
+        '💰': { value: 30, weight: 18 },
+        '🤿': { value: 20, weight: 22 },
+        '🪸': { value: 12, weight: 28 },
+        '⭐': { value: 8, weight: 35 },
+        '🔱': { value: 500, weight: 3, special: 'scatter' },
+      },
+      paylines: [
+        [1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2],
+        [0,1,2,1,0], [2,1,0,1,2], [0,0,1,2,2],
+        [2,2,1,0,0], [1,0,0,0,1], [1,2,2,2,1],
+        [0,1,0,1,0], [2,1,2,1,2], [1,0,1,0,1],
+        [1,2,1,2,1], [0,0,1,0,0], [2,2,1,2,2],
+        [0,1,1,1,0], [2,1,1,1,2], [1,0,2,0,1],
+        [1,2,0,2,1], [0,2,0,2,0], [2,0,2,0,2],
+        [0,1,2,2,2], [2,2,2,1,0], [1,1,0,1,1],
+        [1,1,2,1,1],
+      ],
+      bonusConfig: {
+        type: 'feeding_frenzy',
+        trigger: '3+ scatter',
+        baseSpins: 10,
+        cascadeMultiplierStart: 1,
+        cascadeMultiplierIncrease: 1,
+        maxMultiplier: 50,
+        sharkCollect: true,
+      }
+    },
   },
 
   // ── STATE ────────────────────────────────────────────────────
@@ -457,9 +499,14 @@ const SLOTS_ENGINE = {
       // Process wins
       await this.processResult(result);
 
+      // Detect bonus trigger from scatter symbols on the grid
+      const finalGrid = result.grid || this.generateGridFromOutcome(result);
+      const scatterCount = this.countScatters(finalGrid, game);
+      const bonusTrigger = result.bonus || (scatterCount >= 3 ? game.bonusConfig?.type : null);
+
       // Check for bonus trigger
-      if (result.bonus) {
-        await this.triggerBonus(result.bonus);
+      if (bonusTrigger) {
+        await this.triggerBonus(bonusTrigger);
       }
 
       // Handle cascades for megaways/video
@@ -488,6 +535,10 @@ const SLOTS_ENGINE = {
     const session = await getSession();
     if (!session) throw new Error('Not logged in');
 
+    const isSlot = Object.keys(SLOTS_ENGINE.GAMES).includes(gameId);
+    const serverGame = isSlot ? 'slots' : gameId;
+    const choice = isSlot ? { gameType: gameId, clientSeed, nonce } : { clientSeed, nonce };
+
     const res = await fetch(`${SUPABASE_URL}/functions/v1/place-bet`, {
       method: 'POST',
       headers: {
@@ -495,9 +546,9 @@ const SLOTS_ENGINE = {
         'Authorization': `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({
-        game: gameId,
+        game: serverGame,
         amount: bet,
-        choice: { clientSeed, nonce },
+        choice,
         clientSeed,
         nonce,
       }),
@@ -933,6 +984,9 @@ const SLOTS_ENGINE = {
       case 'expanding_wild_fs':
         await this.runExpandingWildFS(config);
         break;
+      case 'feeding_frenzy':
+        await this.runFeedingFrenzy(config);
+        break;
     }
 
     this.hideBonusOverlay();
@@ -963,6 +1017,9 @@ const SLOTS_ENGINE = {
         break;
       case 'expanding_wild_fs':
         html = this.getExpandingWildFSHTML();
+        break;
+      case 'feeding_frenzy':
+        html = this.getFeedingFrenzyHTML();
         break;
     }
 
@@ -1644,6 +1701,140 @@ const SLOTS_ENGINE = {
         this.updateBalanceDisplay();
         window.updateBal?.(this.state.balance);
         this.showResult(`👑 PHARAOH'S BLESSING! +$${totalWin.toLocaleString()}`, 'jackpot');
+        await new Promise(r => setTimeout(r, 3000));
+        this.hideBonusOverlay();
+      }
+    });
+  },
+
+  // ── FEEDING FRENZY (MEGALODON) ─────────────────────────────
+  getFeedingFrenzyHTML() {
+    return `
+      <div class="bonus-modal feeding-frenzy">
+        <div class="bonus-header">
+          <h3>🦈 FEEDING FRENZY</h3>
+          <div class="fs-stats">
+            <span>SPINS: <span id="ffSpins">10</span></span>
+            <span>MULT: <span id="ffMult">×1</span></span>
+            <span>WIN: $<span id="ffWin">0</span></span>
+          </div>
+        </div>
+        <div class="ff-reels" id="ffReels"></div>
+        <button class="btn btn-primary btn-lg" id="ffSpinBtn">SPIN</button>
+        <div class="ff-log" id="ffLog"></div>
+      </div>
+    `;
+  },
+
+  async runFeedingFrenzy(config) {
+    let spins = config.baseSpins;
+    let multiplier = config.cascadeMultiplierStart;
+    let totalWin = 0;
+    const game = this.state.currentGame;
+    const ffSymbols = (typeof SLOT_SYMBOLS !== 'undefined' && SLOT_SYMBOLS.megalodon)
+      ? SLOT_SYMBOLS.megalodon
+      : (game.symbols ? Object.keys(game.symbols) : ['🦈','🐙','🪼','💰','🤿','🪸','⭐','🔱']);
+
+    const updateDisplay = () => {
+      document.getElementById('ffSpins').textContent = spins;
+      document.getElementById('ffMult').textContent = `×${multiplier}`;
+      document.getElementById('ffWin').textContent = totalWin.toLocaleString();
+    };
+
+    const renderGrid = (grid) => {
+      const el = document.getElementById('ffReels');
+      if (!el) return;
+      el.innerHTML = grid.map(row =>
+        `<div class="ff-row">${row.map(s => `<span class="ff-sym">${s}</span>`).join('')}</div>`
+      ).join('');
+    };
+
+    const genGrid = () => {
+      const rows = game.rows || 3;
+      const reels = game.reels || 5;
+      return Array.from({ length: rows }, () =>
+        Array.from({ length: reels }, () => ffSymbols[Math.floor(Math.random() * ffSymbols.length)])
+      );
+    };
+
+    const countWinning = (grid) => {
+      const rows = grid.length;
+      const wins = [];
+      for (let r = 0; r < rows; r++) {
+        if (grid[r][0] === grid[r][1] && grid[r][1] === grid[r][2]) {
+          wins.push({ row: r, symbol: grid[r][0] });
+        }
+      }
+      return wins;
+    };
+
+    const removeAndDrop = (grid, wins) => {
+      const rows = grid.length;
+      const cols = grid[0].length;
+      const removed = new Set();
+      wins.forEach(({ row }) => {
+        for (let c = 0; c < Math.min(3, cols); c++) removed.add(`${row},${c}`);
+      });
+      const newGrid = grid.map((row, r) =>
+        row.map((sym, c) => removed.has(`${r},${c}`) ? null : sym)
+      );
+      for (let c = 0; c < cols; c++) {
+        const col = newGrid.map(row => row[c]).filter(s => s !== null);
+        while (col.length < rows) col.unshift(ffSymbols[Math.floor(Math.random() * ffSymbols.length)]);
+        for (let r = 0; r < rows; r++) newGrid[r][c] = col[r];
+      }
+      return newGrid;
+    };
+
+    updateDisplay();
+
+    const spinBtn = document.getElementById('ffSpinBtn');
+    spinBtn.addEventListener('click', async () => {
+      if (spins <= 0 || spinBtn.disabled) return;
+      spinBtn.disabled = true;
+      spins--;
+      document.getElementById('ffSpins').textContent = spins;
+      this.playSound('spin');
+
+      let grid = genGrid();
+      renderGrid(grid);
+      await new Promise(r => setTimeout(r, 500));
+
+      let cascadeCount = 0;
+      let spinWin = 0;
+
+      let wins = countWinning(grid);
+      while (wins.length > 0) {
+        cascadeCount++;
+        const cascMult = Math.min(multiplier + (cascadeCount - 1) * config.cascadeMultiplierIncrease, config.maxMultiplier);
+        const rowWin = wins.length * this.state.totalBet * cascMult;
+        spinWin += Math.round(rowWin);
+        totalWin += Math.round(rowWin);
+
+        document.getElementById('ffLog').innerHTML += `<div>🦈 Cascade ${cascadeCount}: ×${cascMult} — +$${Math.round(rowWin).toLocaleString()}</div>`;
+        this.playSound('win');
+        updateDisplay();
+        renderGrid(grid);
+        await new Promise(r => setTimeout(r, 600));
+
+        grid = removeAndDrop(grid, wins);
+        renderGrid(grid);
+        await new Promise(r => setTimeout(r, 400));
+        wins = countWinning(grid);
+      }
+
+      if (spinWin === 0) {
+        this.playSound('lose');
+      }
+
+      if (spins > 0) {
+        spinBtn.disabled = false;
+      } else {
+        this.state.balance += totalWin;
+        this.state.totalWon += totalWin;
+        this.updateBalanceDisplay();
+        window.updateBal?.(this.state.balance);
+        this.showResult(`🦈 FEEDING FRENZY COMPLETE! +$${totalWin.toLocaleString()}`, 'jackpot');
         await new Promise(r => setTimeout(r, 3000));
         this.hideBonusOverlay();
       }
