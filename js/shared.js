@@ -31,7 +31,12 @@ async function apiLogin(username, password) {
     return { ok: false, error: error.message };
   }
 
-  const profile = await fetchProfile();
+  let profile = null;
+  for (let i = 0; i < 10; i++) {
+    profile = await fetchProfile();
+    if (profile) break;
+    await new Promise(r => setTimeout(r, 500));
+  }
   if (!profile) {
     return { ok: false, error: 'Could not load profile. Please try again.' };
   }
