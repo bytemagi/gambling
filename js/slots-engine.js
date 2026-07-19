@@ -263,7 +263,7 @@ const SLOTS_ENGINE = {
       name: 'Megalodon',
       icon: '🦈',
       type: 'video',
-      reels: 5, rows: 3, paylines: 25,
+      reels: 5, rows: 3, numPaylines: 25,
       theme: 'cyan',
       rtp: 95.5, volatility: 'Extreme',
       minBet: 0.5, maxBet: 500, maxMult: 2000,
@@ -340,7 +340,7 @@ const SLOTS_ENGINE = {
 
     this.state.currentGame = game;
     this.state.bet = game.minBet;
-    this.state.lines = game.paylines || 1;
+    this.state.lines = Array.isArray(game.paylines) ? game.paylines.length : (game.paylines || 1);
     this.state.totalBet = this.state.bet * this.state.lines;
 
     // Generate reel strips

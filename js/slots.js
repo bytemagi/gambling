@@ -10,6 +10,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const urlParams = new URLSearchParams(window.location.search);
   const gameId = urlParams.get('game') || 'classic';
 
+  // If a specific game was requested, toggle visibility immediately
+  if (gameId && gameId !== 'classic') {
+    const selector = document.getElementById('gameSelector');
+    const gameArea = document.getElementById('gameArea');
+    if (selector) selector.style.display = 'none';
+    if (gameArea) gameArea.style.display = '';
+  }
+
   // Initialize the slot engine
   try {
     await SLOTS_ENGINE.init(gameId);
