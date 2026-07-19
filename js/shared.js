@@ -223,6 +223,7 @@ async function initNav() {
   const bal = document.getElementById('bal');
   if (ul)  ul.textContent  = profile.username;
   if (bal) bal.textContent = profile.balance;
+  initHamburger();
 }
 
 function updateBal(n) {

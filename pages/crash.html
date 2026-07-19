@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Crash · Fuckitt's Funhouse</title>
-<link rel="stylesheet" href="../css/shared.css">
+<link rel="stylesheet" href="../css/shared.css?v=3">
 <style>
 :root { --orange:#e67e22; --orange2:#f39c12; }
 body { background-image:radial-gradient(ellipse at 50% 0%, #3a1a0020 0%, transparent 60%), repeating-linear-gradient(45deg,#ffffff03 0,#ffffff03 1px,transparent 1px,transparent 8px); }
@@ -80,7 +80,10 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #3a1a0020 0%, transpa
     <a class="header-logo-wrap" href="index.html">
       <img src="../logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse">
     </a>
-    <nav class="header-nav">
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="header-nav" id="headerNav">
       <a class="nav-link" href="index.html"><span class="nav-icon">🏠</span> Lobby</a>
       <a class="nav-link" href="fish.html"><span class="nav-icon">🐟</span> Fish Frenzy <span class="nav-badge new">NEW</span></a>
       <a class="nav-link" href="slots.html"><span class="nav-icon">🎰</span> Slots</a>
@@ -185,7 +188,7 @@ body { background-image:radial-gradient(ellipse at 50% 0%, #3a1a0020 0%, transpa
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/shared.js"></script>
+<script src="../js/shared.js?v=3"></script>
 <script src="../js/sounds.js"></script>
 <script src="../js/provably-fair.js"></script>
 <script>

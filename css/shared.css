@@ -859,6 +859,341 @@ p { color: var(--text-dim); line-height: 1.7; }
 }
 
 /* ──────────────────────────────────────────────────────────────
+   CSS VARIABLE ALIASES
+   ────────────────────────────────────────────────────────────── */
+:root {
+  /* Aliases used by fish.css and game pages */
+  --muted:    var(--text-muted);
+  --bg2:      var(--bg-elev);
+  --bg3:      var(--bg-card-hover);
+  --card:     var(--bg-card);
+  --border2:  var(--border-bright);
+  --gold2:    var(--gold);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   GAME PAGE COMMON STYLES
+   (shared across crash, mines, coin, dice, fish, slots)
+   ────────────────────────────────────────────────────────────── */
+
+/* Title bar */
+.game-title-bar {
+  text-align: center;
+  padding: var(--space-5) var(--space-4) var(--space-3);
+}
+.game-title-bar h1 {
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 2px;
+  margin-bottom: var(--space-1);
+}
+.game-title-bar p {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+/* Odds/info row */
+.odds-row {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 0 var(--space-4) var(--space-4);
+}
+.odds-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-md);
+  min-width: 80px;
+}
+.odds-label {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-label);
+}
+.odds-val {
+  font-family: 'Oswald', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Bet panel title */
+.bet-panel-title {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-label);
+  margin-bottom: var(--space-2);
+}
+
+/* Bet amount row */
+.bet-amount-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.bet-amount-row label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.bet-amount-row .form-input {
+  width: 100px;
+}
+
+/* Quick bet buttons */
+.qb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1) var(--space-3);
+  min-width: 48px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-md);
+  color: var(--text-dim);
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--trans-fast);
+}
+.qb:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: var(--gold-bg);
+}
+
+/* History wrapper */
+.history {
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-lg);
+}
+.history h3 {
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: var(--space-3);
+}
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-md);
+  margin-bottom: var(--space-2);
+  animation: slideIn 0.3s ease;
+}
+.history-item:last-child { margin-bottom: 0; }
+
+/* History amount */
+.h-amt {
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+/* Result banner (non-slot pages) */
+.result-banner {
+  border-radius: var(--rad-lg);
+  padding: var(--space-4) var(--space-5);
+  margin: 0 var(--space-4) var(--space-4);
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--trans-base);
+}
+.result-banner.idle {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+}
+.result-banner.win {
+  background: var(--green-bg);
+  border: 1px solid var(--green-border);
+  color: var(--green);
+  box-shadow: var(--shadow-green);
+}
+.result-banner.bigwin {
+  background: var(--gold-bg);
+  border: 1px solid var(--gold-border);
+  color: var(--gold);
+  box-shadow: var(--shadow-gold);
+}
+.result-banner.jackpot {
+  background: linear-gradient(135deg, #1a0a2e, #0d0518);
+  border: 2px solid var(--gold);
+  color: var(--gold-bright);
+  box-shadow: var(--shadow-gold), 0 0 60px var(--gold-glow);
+}
+.result-banner.lose {
+  background: var(--red-bg);
+  border: 1px solid var(--red-border);
+  color: var(--red);
+}
+.result-banner.feature {
+  background: var(--purple-bg);
+  border: 1px solid var(--purple-border);
+  color: var(--purple-bright);
+}
+
+/* Gold button */
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
+  background: linear-gradient(135deg, var(--gold-dim), var(--gold), var(--gold-bright));
+  border: none;
+  border-radius: var(--rad-lg);
+  color: #0a0b10;
+  font-family: 'Oswald', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all var(--trans-fast);
+  box-shadow: 0 4px 16px var(--gold-glow);
+}
+.btn-gold:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--gold-glow);
+}
+
+/* Provably fair widget */
+.pf-widget {
+  margin: var(--space-4);
+  padding: var(--space-4);
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-lg);
+}
+.pf-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: var(--space-3);
+}
+.pf-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+  font-size: 0.8125rem;
+}
+.pf-label {
+  color: var(--text-muted);
+  white-space: nowrap;
+  min-width: 120px;
+}
+.pf-val { color: var(--text); }
+.pf-hash {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  word-break: break-all;
+}
+.pf-input {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-sm);
+  padding: var(--space-1) var(--space-2);
+  color: var(--text);
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+.pf-btn {
+  padding: var(--space-1) var(--space-3);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-sm);
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all var(--trans-fast);
+}
+.pf-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.pf-verify-btn {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-3);
+  padding: var(--space-2);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-md);
+  color: var(--gold);
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--trans-fast);
+}
+.pf-verify-btn:hover {
+  border-color: var(--gold);
+  background: var(--gold-bg);
+}
+.pf-verify-result {
+  margin-top: var(--space-2);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+/* Back button */
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-md);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all var(--trans-fast);
+}
+.btn-back:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ──────────────────────────────────────────────────────────────
    ACCESSIBILITY
    ────────────────────────────────────────────────────────────── */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border-width: 0; }

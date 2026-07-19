@@ -15,7 +15,7 @@
   border-bottom: 1px solid var(--border);
   padding: 16px 20px;
   position: sticky;
-  top: 68px;
+  top: var(--hdr-h);
   z-index: 10;
 }
 .game-title-area h1 {
@@ -213,27 +213,6 @@
   pointer-events: none;
   z-index: 5;
 }
-.aim-line {
-  position: absolute;
-  bottom: 100px;
-  left: 50%;
-  width: 2px;
-  height: 100px;
-  background: linear-gradient(to top, var(--gold), transparent);
-  transform-origin: bottom center;
-  transform: translateX(-50%) rotate(0deg);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 10;
-}
-.aim-line.visible { opacity: 0.8; }
-.hit-effect-layer, .floating-numbers {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 15;
-}
-
 /* ── BOSS BANNER ─────────────────────────────────────────────── */
 .boss-banner {
   position: absolute;
@@ -359,24 +338,6 @@
 .ss-value.negative { color: var(--red); }
 .ss-value.gold { color: var(--gold); }
 
-/* ── RECENT WINS ─────────────────────────────────────────────── */
-.recent-wins-list { display: flex; flex-direction: column; gap: 6px; }
-.recent-win {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  animation: slideIn 0.3s ease;
-}
-@keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
-.rw-icon { font-size: 1.2rem; width: 30px; text-align: center; }
-.rw-info { flex: 1; min-width: 0; }
-.rw-name { font-size: 0.7rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rw-mult { font-family: 'Oswald', sans-serif; font-size: 0.7rem; color: var(--gold); }
-.rw-amount { font-family: 'Cinzel', serif; font-size: 0.85rem; color: var(--green); font-weight: 700; }
 
 /* ── FOOTER CONTROLS ─────────────────────────────────────────── */
 .game-footer-controls {
@@ -440,24 +401,6 @@
 @keyframes hitSplash {
   0% { transform: scale(0.5); opacity: 1; }
   100% { transform: scale(2); opacity: 0; }
-}
-.floating-number {
-  position: absolute;
-  font-family: 'Oswald', sans-serif;
-  font-size: 1.2rem;
-  font-weight: 700;
-  pointer-events: none;
-  animation: floatUp 1.2s ease-out forwards;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
-  z-index: 25;
-}
-.floating-number.win { color: var(--green); }
-.floating-number.bigwin { color: var(--gold); font-size: 1.5rem; text-shadow: 0 0 10px var(--gold), 0 2px 8px rgba(0,0,0,0.8); }
-.floating-number.boss { color: var(--red); font-size: 1.8rem; }
-@keyframes floatUp {
-  0% { transform: translate(-50%, 0) scale(0.8); opacity: 0; }
-  10% { opacity: 1; transform: translate(-50%, 0) scale(1.1); }
-  100% { transform: translate(-50%, -80px) scale(1); opacity: 0; }
 }
 
 /* ── CANNON VISUAL ───────────────────────────────────────────── */
@@ -559,20 +502,6 @@
 .bullet-trail.special { background: linear-gradient(45deg, var(--purple), var(--cyan), var(--gold)); animation: specialBullet 0.2s linear infinite; }
 @keyframes specialBullet { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
 
-/* ── NET EFFECT ──────────────────────────────────────────────── */
-.net-effect {
-  position: absolute;
-  border: 3px solid var(--gold);
-  border-radius: 50%;
-  pointer-events: none;
-  animation: netExpand 0.4s ease-out forwards;
-  z-index: 18;
-}
-@keyframes netExpand {
-  0% { transform: translate(-50%, -50%) scale(0); opacity: 1; border-width: 4px; }
-  100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; border-width: 1px; }
-}
-
 /* ── RESPONSIVE ──────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .game-header { padding: 12px 16px; }
@@ -611,9 +540,9 @@
   pointer-events: none;
   z-index: 20;
 }
-.floating-number.win { color: #00e676; }
-.floating-number.bigwin { color: #f5c518; font-size: 1.6rem; text-shadow: 0 0 20px rgba(245,197,24,0.8); }
-.floating-number.boss { color: #ff1744; font-size: 2rem; text-shadow: 0 0 30px rgba(255,23,68,1); }
+.floating-number.win { color: var(--green); }
+.floating-number.bigwin { color: var(--gold); font-size: 1.6rem; text-shadow: 0 0 20px var(--gold-glow); }
+.floating-number.boss { color: var(--red); font-size: 2rem; text-shadow: 0 0 30px var(--red); }
 
 @keyframes floatUp {
   0% { opacity: 1; transform: translateY(0) scale(1); }
@@ -682,7 +611,7 @@
 .rw-info { flex: 1; min-width: 0; }
 .rw-name { font-size: 0.75rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rw-mult { font-family: 'Oswald', sans-serif; font-size: 0.7rem; color: var(--gold); }
-.rw-amount { font-family: 'Oswald', sans-serif; font-size: 0.85rem; color: #00e676; font-weight: 700; }
+.rw-amount { font-family: 'Oswald', sans-serif; font-size: 0.85rem; color: var(--green); font-weight: 700; }
 
 /* ── BUTTON STATES ──────────────────────────────────────────── */
 .btn-cannon.active { background: linear-gradient(135deg, #ff1744, #c00); box-shadow: 0 0 20px rgba(255,23,68,0.5); }
