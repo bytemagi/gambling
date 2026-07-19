@@ -52,9 +52,11 @@ Deno.serve(async (req) => {
       referrerProfile = referrer;
     }
 
-    if (referrerProfile?.id && referrerProfile.id !== userId) {
+    const hasValidReferrer = referrerProfile?.id && referrerProfile.id !== userId;
+
+    if (hasValidReferrer) {
       await supabaseService.rpc('credit_balance_for', { p_user_id: referrerProfile.id, p_amount: bonusAmount });
-      await supabaseService.from('profiles').update({ referred_by: normalizedReferralCode }).eq('id', userId).select().single();
+      await supabaseService.from('profiles').update({ referred_by: normalizedReferralCode }).eq('id', userId);
       await supabaseService.from('bets').insert({
         user_id: referrerProfile.id,
         username: 'referrer',
@@ -69,7 +71,7 @@ Deno.serve(async (req) => {
     await supabaseService.rpc('credit_balance_for', { p_user_id: userId, p_amount: bonusAmount });
     await supabaseService.from('profiles').update({ signup_bonus_claimed: true }).eq('id', userId);
 
-    if (referrerProfile?.id && referrerProfile.id !== userId) {
+    if (hasValidReferrer) {
       await supabaseService.from('bets').insert({
         user_id: userId,
         username: 'player',

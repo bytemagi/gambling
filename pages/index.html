@@ -739,86 +739,122 @@
 <button id="soundToggle" title="Toggle Sound" onclick="toggleSound()" aria-label="Toggle sound">🔊</button>
 
 <!-- ══════════════════════════════════════════════════════════════
-     LOGIN SCREEN
-     ═════════════════════════════════════════════════════════════ -->
+     LOGIN SCREEN — Modern Split Design
+     ═══════════════════════════════════════════════════════════════ -->
 <div id="loginScreen">
-
-  <!-- Left: Hero Branding -->
-  <div class="login-hero-panel">
-    <div class="login-hero-logo">
-      <img src="../logo.svg" class="graffiti-logo" alt="Fuckitt's Funhouse" style="max-width:200px">
+  <div class="login-split">
+    <!-- Left: Brand Hero -->
+    <div class="login-brand">
+      <div class="brand-content">
+        <div class="brand-logo">
+          <img src="../logo.svg" class="graffiti-logo" alt="Fuckitt's Funhouse" style="max-width:180px">
+        </div>
+        <h1 class="brand-headline">
+          <span>The House</span><br>
+          <span class="brand-gold">Always Loses</span><br>
+          <span>Here.</span>
+        </h1>
+        <p class="brand-sub">
+          Provably fair gaming with real-time payouts. Five games, zero house edge tricks, and wins that hit instantly.
+        </p>
+        <div class="brand-features">
+          <div class="brand-feature">
+            <span class="brand-feature-icon">🔐</span>
+            <div>
+              <strong>Provably Fair</strong>
+              <span>Every result cryptographically verifiable</span>
+            </div>
+          </div>
+          <div class="brand-feature">
+            <span class="brand-feature-icon">⚡</span>
+            <div>
+              <strong>Instant Payouts</strong>
+              <span>Wins credited in real time</span>
+            </div>
+          </div>
+          <div class="brand-feature">
+            <span class="brand-feature-icon">🎰</span>
+            <div>
+              <strong>5 Exclusive Games</strong>
+              <span>Slots, Crash, Mines, Dice & Coin Flip</span>
+            </div>
+          </div>
+        </div>
+        <div class="brand-badge">
+          <span class="badge-pulse">🎁</span>
+          <span>New players get <strong>$500</strong> free credits + <strong>10%</strong> deposit bonus</span>
+        </div>
+      </div>
     </div>
 
-    <h1 class="login-hero-headline">
-      <span>The House</span><br>
-      <span style="color:#fff">Always Loses</span><br>
-      <span>Here.</span>
-    </h1>
+    <!-- Right: Auth Form -->
+    <div class="login-auth">
+      <div class="auth-container">
+        <!-- Tab Navigation -->
+        <div class="auth-tabs" role="tablist">
+          <button class="auth-tab active" role="tab" data-tab="login" aria-selected="true">Sign In</button>
+          <button class="auth-tab" role="tab" data-tab="signup" aria-selected="false">Create Account</button>
+        </div>
 
-    <p class="login-hero-sub">
-      Provably fair gaming with real-time payouts.
-      Five games, zero house edge tricks, and wins that hit instantly.
-    </p>
+        <!-- Login Form -->
+        <div class="auth-panel active" id="panel-login" role="tabpanel">
+          <div class="auth-header">
+            <h2>Welcome Back</h2>
+            <p>Enter your credentials to continue</p>
+          </div>
+          <form id="loginForm" class="auth-form">
+            <div class="form-group">
+              <label for="loginUser">Username</label>
+              <input id="loginUser" type="text" placeholder="Enter your username" autocomplete="username" required>
+            </div>
+            <div class="form-group">
+              <label for="loginPass">Password</label>
+              <input id="loginPass" type="password" placeholder="Enter your password" autocomplete="current-password" required>
+            </div>
+            <div id="loginErr" class="form-error"></div>
+            <button type="submit" class="btn-auth btn-gold">🚀 Enter the Funhouse</button>
+          </form>
+          <p class="auth-switch">
+            Don't have an account? <button type="button" class="switch-tab" data-target="signup">Create one</button>
+          </p>
+        </div>
 
-    <div class="login-features">
-      <div class="login-feature">
-        <div class="login-feature-icon gold">🔐</div>
-        <div class="login-feature-text">
-          <strong>Provably Fair</strong>
-          <span>Every result is cryptographically verifiable</span>
+        <!-- Signup Form -->
+        <div class="auth-panel" id="panel-signup" role="tabpanel" hidden>
+          <div class="auth-header">
+            <h2>Create Account</h2>
+            <p>Start playing in seconds — no email verification needed</p>
+          </div>
+          <form id="signupForm" class="auth-form">
+            <div class="form-group">
+              <label for="signupUser">Username</label>
+              <input id="signupUser" type="text" placeholder="Pick a username" autocomplete="username" required minlength="3" maxlength="20">
+              <span class="form-hint">3-20 characters, letters & numbers only</span>
+            </div>
+            <div class="form-group">
+              <label for="signupPass">Password</label>
+              <input id="signupPass" type="password" placeholder="Create a password" autocomplete="new-password" required minlength="6">
+              <span class="form-hint">At least 6 characters</span>
+            </div>
+            <div class="form-group">
+              <label for="signupReferral">Referral Code <span class="optional">(optional)</span></label>
+              <input id="signupReferral" type="text" placeholder="Enter a friend's code for bonus" autocomplete="off" maxlength="6" style="text-transform:uppercase">
+              <span class="form-hint">Get extra bonus when a friend refers you</span>
+            </div>
+            <div id="signupErr" class="form-error"></div>
+            <button type="submit" class="btn-auth btn-gold">✨ Create Account & Play</button>
+          </form>
+          <p class="auth-switch">
+            Already have an account? <button type="button" class="switch-tab" data-target="login">Sign in</button>
+          </p>
         </div>
-      </div>
-      <div class="login-feature">
-        <div class="login-feature-icon green">⚡</div>
-        <div class="login-feature-text">
-          <strong>Instant Payouts</strong>
-          <span>Wins credited to your balance in real time</span>
-        </div>
-      </div>
-      <div class="login-feature">
-        <div class="login-feature-icon purple">🎰</div>
-        <div class="login-feature-text">
-          <strong>5 Exclusive Games</strong>
-          <span>Slots, Crash, Mines, Dice & Coin Flip</span>
-        </div>
+
+        <p class="auth-note">
+          <strong>Instant access</strong> — your account is created immediately with <strong>$500</strong> in play credits.
+        </p>
       </div>
     </div>
   </div>
-
-  <!-- Right: Login Form -->
-  <div class="login-form-panel">
-    <div class="login-form-logo">
-      <img src="../logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse" style="margin:0 auto">
-    </div>
-    <div class="login-form-tagline">Est. 2024 · Play at Your Own Risk</div>
-    <div class="login-divider"></div>
-
-    <h2 class="login-form-title">Welcome Back</h2>
-
-    <div class="login-box">
-      <div class="login-field">
-        <label for="loginUser">Username</label>
-        <input id="loginUser" type="text" placeholder="Enter your username" autocomplete="username">
-      </div>
-      <div class="login-field">
-        <label for="loginPass">Password</label>
-        <input id="loginPass" type="password" placeholder="Enter your password" autocomplete="current-password"
-          onkeydown="if(event.key==='Enter')submitLogin()">
-      </div>
-      <div class="login-field">
-        <label for="loginReferral">Referral Code (optional)</label>
-        <input id="loginReferral" type="text" placeholder="Enter code if you have one" autocomplete="off">
-      </div>
-      <div id="loginErr"></div>
-      <button class="btn-gold" onclick="submitLogin()">🚀 Enter the Funhouse</button>
-      <p class="login-note">
-        New here? Just enter a username &amp; password —<br>
-        your account is created <strong>automatically</strong>.<br>
-        You'll start with <strong>$500</strong> in play credits.
-      </p>
-    </div>
-  </div>
-
 </div><!-- /#loginScreen -->
 
 

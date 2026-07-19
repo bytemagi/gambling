@@ -5,19 +5,30 @@
 
 -- ── Profiles table (extends Supabase auth.users) ──────────────
 create table if not exists public.profiles (
-  id         uuid references auth.users(id) on delete cascade primary key,
-  username   text unique not null,
-  balance    integer not null default 100,
-  free_spins integer not null default 0,
-  created_at timestamptz default now()
+  id              uuid references auth.users(id) on delete cascade primary key,
+  username        text unique not null,
+  balance         integer not null default 100,
+  free_spins      integer not null default 0,
+  referral_code   text unique,
+  referred_by     text,
+  signup_bonus_claimed boolean not null default false,
+  created_at      timestamptz default now()
 );
 
 -- Auto-create profile on signup
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer as $$
+declare
+  new_referral_code text;
 begin
-  insert into public.profiles (id, username)
-  values (new.id, new.raw_user_meta_data->>'username');
+  -- Generate unique 6-character referral code
+  loop
+    new_referral_code := upper(substring(md5(random()::text || clock_timestamp()::text) from 1 for 6));
+    exit when not exists (select 1 from public.profiles where referral_code = new_referral_code);
+  end loop;
+
+  insert into public.profiles (id, username, referral_code)
+  values (new.id, new.raw_user_meta_data->>'username', new_referral_code);
   return new;
 end;
 $$;
@@ -108,15 +119,5 @@ begin
     raise exception 'Insufficient balance';
   end if;
   return new_bal;
-end;
-$$;
-
--- Credits amount back (winnings)
-create or replace function public.credit_balance(p_amount integer)
-returns void language plpgsql security definer as $$
-begin
-  update public.profiles
-    set balance = balance + p_amount
-    where id = auth.uid();
 end;
 $$;

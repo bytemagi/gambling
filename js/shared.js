@@ -267,6 +267,111 @@ function spawnParticles(count) {
   }
 }
 
+// ── Shared header/footer (eliminates 9x copy-paste) ───────────
+
+const NAV_ITEMS = [
+  { page: 'index.html',      icon: '🏠', label: 'Lobby' },
+  { page: 'fish.html',       icon: '🐟', label: 'Fish Frenzy', badge: 'new' },
+  { page: 'slots.html',      icon: '🎰', label: 'Slots',        badge: 'hot' },
+  { page: 'crash.html',      icon: '🚀', label: 'Crash' },
+  { page: 'mines.html',      icon: '💣', label: 'Mines' },
+  { page: 'coin.html',       icon: '🪙', label: 'Coin Flip' },
+  { page: 'dice.html',       icon: '🎲', label: 'Dice' },
+  { page: 'leaderboard.html',icon: '🏆', label: 'Leaderboard' },
+  { page: 'wallet.html',     icon: '💳', label: 'Wallet' },
+];
+
+const FOOTER_ITEMS = [
+  { page: 'index.html',      icon: '🏠', label: 'Lobby' },
+  { page: 'slots.html',      icon: '🎰', label: 'Slots' },
+  { page: 'crash.html',      icon: '🚀', label: 'Crash' },
+  { page: 'mines.html',      icon: '💣', label: 'Mines' },
+  { page: 'coin.html',       icon: '🪙', label: 'Coin' },
+  { page: 'dice.html',       icon: '🎲', label: 'Dice' },
+  { page: 'leaderboard.html',icon: '🏆', label: 'Leaderboard' },
+  { page: 'wallet.html',     icon: '💳', label: 'Wallet' },
+  { page: 'history.html',    icon: '📋', label: 'History' },
+];
+
+function renderSiteHeader(activePage) {
+  const navLinks = NAV_ITEMS.map(item => {
+    const active = item.page === activePage ? ' active' : '';
+    const badge = item.badge ? ` <span class="nav-badge ${item.badge}">${item.badge === 'new' ? 'NEW' : 'HOT'}</span>` : '';
+    return `      <a class="nav-link${active}" href="${item.page}"><span class="nav-icon">${item.icon}</span> ${item.label}${badge}</a>`;
+  }).join('\n');
+
+  return `<header class="site-header">
+  <div class="header-top">
+    <a class="header-logo-wrap" href="index.html">
+      <img src="../logo.svg" class="graffiti-logo-sm" alt="Fuckitt's Funhouse">
+    </a>
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="header-nav" id="headerNav">
+${navLinks}
+    </nav>
+    <div class="header-right">
+      <div class="balance-chip">
+        <span class="balance-chip-icon">💰</span>
+        <div class="balance-chip-inner">
+          <span class="balance-chip-label">Balance</span>
+          <span class="balance-chip-amount">$<span id="bal">0</span></span>
+        </div>
+      </div>
+      <div class="user-chip">
+        <span class="dot online" id="statusDot"></span>
+        <span id="userLabel"></span>
+      </div>
+      <button class="btn-ghost" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+</header>`;
+}
+
+function renderSiteFooter() {
+  const links = FOOTER_ITEMS.map(item =>
+    `    <a href="${item.page}">${item.icon} ${item.label}</a>`
+  ).join('\n');
+
+  return `<footer class="site-footer" style="padding:36px 24px 28px;text-align:center;margin-top:60px">
+  <img src="../logo.svg" class="graffiti-logo-xs" alt="Fuckitt's Funhouse" style="margin:0 auto 18px">
+  <div class="footer-links" style="margin-bottom:18px">
+${links}
+  </div>
+  <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+    <span class="footer-badge green">✓ Provably Fair</span>
+    <span class="footer-badge gold">⚡ Instant Payouts</span>
+    <span class="footer-badge">🔒 Secure · Est. 2024</span>
+  </div>
+  <div class="footer-copy">© 2024 Fuckitt's Funhouse · For entertainment purposes only</div>
+</footer>`;
+}
+
+function initLayout(activePage) {
+  const headerEl = document.getElementById('siteHeader');
+  const footerEl = document.getElementById('siteFooter');
+  if (headerEl) headerEl.innerHTML = renderSiteHeader(activePage);
+  if (footerEl) footerEl.innerHTML = renderSiteFooter();
+  initHamburger();
+}
+
+function initHamburger() {
+  const btn = document.getElementById('hamburgerBtn');
+  const nav = document.getElementById('headerNav');
+  if (!btn || !nav) return;
+  btn.onclick = () => {
+    nav.classList.toggle('open');
+    btn.classList.toggle('open');
+  };
+  nav.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+      nav.classList.remove('open');
+      btn.classList.remove('open');
+    });
+  });
+}
+
 // ── Sound toggle (global, persisted in localStorage) ──────────
 
 let soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
