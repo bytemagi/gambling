@@ -438,10 +438,9 @@ function soundBossPhase() {
 }
 
 // ── Global playSound wrapper ───────────────────────────────────
-const soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
-
+// soundEnabled is declared in shared.js; reference it via window to avoid redeclaration.
 function playSound(name) {
-  if (!soundEnabled) return;
+  if (localStorage.getItem('soundEnabled') === 'false') return;
   const fn = window[name];
   if (typeof fn === 'function') {
     try { fn(); } catch(e) {}

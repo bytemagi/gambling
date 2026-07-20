@@ -112,7 +112,7 @@ const SLOTS_ENGINE = {
       if (el) el.textContent = this.state.balance.toLocaleString();
     });
     const spinCostEl = document.getElementById('spinCost');
-    if (spinCostEl) spinCostEl.textContent = '$' + this.state.totalBet().toLocaleString();
+    if (spinCostEl) spinCostEl.textContent = '$' + this.totalBet().toLocaleString();
   },
 
   totalBet() {
